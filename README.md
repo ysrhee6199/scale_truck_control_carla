@@ -1,1 +1,1 @@
-# scale_truck_control_carla
+# truck
