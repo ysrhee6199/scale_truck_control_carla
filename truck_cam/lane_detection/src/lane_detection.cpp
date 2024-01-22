@@ -237,17 +237,60 @@ LaneDetector::~LaneDetector(void)
 
 }
 
-
-int LaneDetector::arrMaxIdx(){
+int LaneDetector::arrMaxIdx(int hist[], int start, int end, int Max) {
     int max_index = -1;
     int max_val = 0;
+    int min_pix = 30 * width_ / 1280;
+
+    if (end > Max)
+        end = Max;
+
+    for (int i = start; i < end; i++) {
+        if (max_val < hist[i]) {
+        max_val = hist[i];
+        max_index = i;
+        }
+    }
+    if ((max_index == -1) || (hist[max_index] < (size_t)min_pix)) {
+    //    cout << "ERROR : hist range" << endl;
+        return -1;
+    }
     return max_index;
 }
 
 
 
+// 해당 로직이 왜 들어갔지? 일단 여기도 최적화 가능함
+std::vector<int> LaneDetector::ClusterHistogram(int* hist, int cluster_num) {
+    struct Cluster {
+        int centerIndex;
+        int maxValue;
+        int maxValueIndex;
+    };
 
-std::vector<int> LaneDetector::ClusterHistogram() {
+    std::vector<cv::Point2f> points;
+    for (int i = 0; i < width_; ++i) {
+        for (int j = 0; j < hist[i]; ++j) {
+            points.push_back(cv::Point2f(i, j));
+        }
+    }
+
+    // K-means cluster
+    cv::Mat labels, centers;
+    try
+    {
+        cv::kmeans(points, cluster_num, labels, 
+                    cv::TermCriteria(cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 10, 1.0),
+                    3, cv::KMEANS_PP_CENTERS, centers);
+    } catch (const cv::Exception& e) {
+        std::cerr << "Exception caught: " << e.what() << std::endl;
+        std::cerr << "The error occured in cv::kmeans()" << std::endl;
+        std::vector<int> result;
+        for (int i = 0; i < cluster_num; i++) {
+            result.push_back(-1);
+        }
+        return result;
+    }
 
 }
 
@@ -257,7 +300,77 @@ Mat LaneDetector::polyfit() {
 }
 
 
-Mat LaneDetector::detect_lines_sliding_window() {
+// C++ Numpy 있는지 확인 훨씬 빠름
+Mat LaneDetector::detect_lines_sliding_window(Mat _frame, bool _view) {
+    Mat frame, result;
+    int width = frame.cols
+    int height = frame.rows
+
+    _frame.copyTo(frame);
+    Mat nonZero;
+    findNonZero(frame, nonZero);
+
+    std::vector<int> good_left_idxs;
+    std::vector<int> good_right_idxs;
+    std::vector<int> good_extra_idxs;
+    std::vector<int> good_extra2_idxs;
+
+    int* hist = new int[width];
+
+
+    // initialization hist
+    for (int i = 0; i < width; i++) {
+        hist[i] += 1;
+    }
+    // 0~255 말고 0~1로 변경하면 8bit -> 1bit로 줄일 수 있을듯?
+    for (int j = height/2; j < height; j++) {
+        for (int i = 0; i < width; i++) {
+            if (frame.at <uchar>(j,i) == 255) {
+                hist[i] += 1;
+            }
+        }
+    }
+
+    cvtColor(frame, result, COLOR_GRAY2BGR);
+
+    // 곡률이 엄청 큰경우 해당 로직은 고장남, 추후에 고민 할 사람 있으면 고치세요.
+    int mid_point = width / 2; // 320
+    int n_windows = 9;
+    int margin = 120 * width / 1280;
+
+    int min_pix = 100 * width / 1280;
+
+    int window_width = margin * 2; // 120
+    int window_height;
+    int distance;
+    L_flag = true;
+    R_flag = true;
+    E_flag = true;
+    E2_flag = true;
+    if(!lc_right_flag_) E_flag = false;
+    if(!lc_left_flag_) E2_flag = false;
+
+    if (option_) {
+        window_height = (height >= distance_) ? ((height-distance_) / n_windows) : (height / n_windows);
+        distance = distance_; // sensor depth estimation
+    } else {
+        distance = 0;
+        window_height = height / n_windows;
+    }
+
+    int Llane_base = arrMaxIdx(hist, 100, mid_point, width); // start ~ mid
+    int Rlane_base = arrMaxIdx(hist, mid_point, width-100, width); // mid ~ w-100
+
+    int E2lane_base = 0, Elane_base = 0;
+    int cluster_num = 2;
+    std::vector<int> maxIndices;
+
+    if (E_flag == true || E2_flag == true) {
+        cluster_num 3;
+        maxIndices = clusterHistogram(hist, cluster_num);
+    }
+
+
 
 }
 
