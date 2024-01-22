@@ -301,6 +301,7 @@ Mat LaneDetector::polyfit() {
 
 
 // C++ Numpy 있는지 확인 훨씬 빠름
+// 해당 함수도 쪼개기
 Mat LaneDetector::detect_lines_sliding_window(Mat _frame, bool _view) {
     Mat frame, result;
     int width = frame.cols
@@ -368,14 +369,125 @@ Mat LaneDetector::detect_lines_sliding_window(Mat _frame, bool _view) {
     if (E_flag == true || E2_flag == true) {
         cluster_num 3;
         maxIndices = clusterHistogram(hist, cluster_num);
+
+        for (size_t i = 0; i < maxIndices.size(); ++i) {
+            if (maxIndices[i] == -1) {
+                cluster_num = 2;
+            }
+            for (size_t j = i+1; j < maxIndices.size(); ++j) {
+                if (maxIndices[i] != -1 && maxIndices[j] != -1) {
+                    if (std::abs(maxIndices[i] - maxIndices[j]) <= 60) {
+                        cluster_num = 2;
+                        break
+                    }
+                }
+            }
+
+        }
+        if (cluster_num == 2) {
+            maxIndices = clusterHistogram(hist, cluster_num);
+        }
+
+        if (cluster_num == 3) {
+            if (E_flag == true) {
+                Llane_base = maxIndices[0];
+                Rlane_base = maxIndices[1];
+                Elane_base = maxIndices[2];
+            }
+            else if (E2_flag == true) {
+                E2lane_base = maxIndices[0];
+                Llane_base = maxIndices[1];
+                Rlane_base = maxIndices[2];
+            }
+        }
+        else if (cluster_num == 2) {
+            if (E_flag == true) {
+                Llane_base = -1;
+                Rlane_base = maxIndices[0];
+                Elane_bass = maxIndices[1];
+            }
+            else if (E2_flag == true) {
+                E2lane_base = maxIndices[0];
+                Llane_base = maxIndices[1];
+                Rlane_base = -1;
+            }
+        }
     }
+
+    int Llane_current = Llane_base;
+    int Rlane_current = Rlane_base;
+    int Elane_current = Elane_base;
+    int E2lane_current = E2lane_base;
+
+
+
+
 
 
 
 }
 
-float LaneDetector::lowPassFilter() {
+Mat LaneDetector::Image2BEV(Mat _frame, int _delay ,bool _view) {
+    Mat test_trans, new_frame, gray_frame, binary_frame, overlap_frame, sliding_frame, resized_frame, warped_frame;
+    static struct timeval startTime, endTime;
+    static bool flag = false;
+    static bool lc_flag = false;
+    double diffTime = 0.0;
 
+
+    // corners_, warpCorners_ 찾아야함
+    Mat trans = getPerspectiveTransform(corners_, warpCorners_);
+
+    if (!_frame.empty()) resize(_frame, new_frame, Size(width_, height_), 0, 0, cv::INTER_LINEAR)
+    
+    cuda::GpuMat gpu_frame, gpu_remap_frame, gpu_warped_frame, gpu_blur_frame, gpu_gray_frame, gpu_binary_frame, gpu_erode_frame;
+
+    gpu_frame.upload(new_frame);
+    // 깔삼한 용어 찾으면 col, row 수정
+    cuda::remap(gpu_frame, gpu_remap_frame, gpu_, gpu_, INTER_LINEAR);
+    gpu_remap_frame.download(new_frame);
+
+    if (imageStatus_ && TEST) {
+        cuda::warpPerspective(gpu_remap_frame, gpu_warped_frame, test_trans, Size(width_, height_));
+    }
+
+    else {
+        cuda::warpPerspective(gpu_remap_frame, gpu_warped_frame, trans, Size(width_, height_));
+    }
+    gpu_warped_frame.download(warped_frame);
+
+    static cv::Ptr<cv::cuda::Filter> filters;
+    filters = cv::cuda::createGaussianFilter(gpu_warped_frame.type(), gpu_blur_frame.type(), cv::Size(5, 5), 0, 0, cv::BORDER_DEFAULT);
+    filters->apply(gpu_warped_frame, gpu_blur_frame);
+    cuda::cvtColor(gpu_blur_frame, gpu_gray_frame, COLOR_BGR2GRAY);
+    gpu_gray_frame.download(gray_frame);
+    /* erode 연산 추가할거면 로직 수정 */
+    for (int y = height_/2; y < gray_frame.rows; y++) {
+        for (int x = 0; x < gray_frame.cols; x++) {
+            if (gray_frame.at<uchar>(y, x) == 0) {
+                gray_frame.at<uchar>(y, x) = 100;
+            }
+        }
+    }
+
+    /* Adpative Threshold -> 해당 로직도 8bit -> 1bit로 변환 가능 */
+    adaptiveThreshold(gray_frame, binary_frame, 255, ADAPTIVE_THRESH_MEAN_C, THRESH_BINARY, Threshold_box_size_, -(Threshold_box_offset_));
+
+    return binary_frame;
+}
+
+
+// adaptive tau 고려해봐도?
+float LaneDetector::lowPassFilter(double sampling_time, float est_value, float prev_res) {
+    float res = 0;
+    float tau = 0.1f;
+    double st = 0.0;
+
+    if (sampling_time > 1.0) st = 1.0;
+    else st = sampling_time;
+    res = ((tau * prev_res) + (st * est_value)) / (tau + st);
+
+    return res
 }
 
 Point LaneDetector::warpPoint() {
