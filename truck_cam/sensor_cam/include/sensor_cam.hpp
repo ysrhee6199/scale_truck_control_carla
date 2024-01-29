@@ -66,7 +66,8 @@ private:
     
     bool viewImage_;
     int waitkeyDelay_;
-    
+    bool isNodeRunning_ = true;
+
 
     //image
     bool imageStatus_ = false;
@@ -96,6 +97,6 @@ private:
     Mat f_camera_matrix, f_dist_coeffs;
     Mat r_camera_matrix, r_dist_coeffs;
     Mat map1_, map2_, f_map1_, f_map2_, r_map1_, r_map2_;
-    int canny_thresh1_, canny_thresh2_;
+    
 }
 }

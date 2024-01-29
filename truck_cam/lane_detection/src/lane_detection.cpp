@@ -10,14 +10,15 @@ LaneDetector::LaneDetector()
     /**************/
     /* ROS2 Topic */
     /**************/
-    
+    std::string SensorCamTopicName; // front cam
+    int SensorCamQueueSize;
     
     
     
     /******************************/
     /* Ros Topic Subscribe Option */
     /******************************/
-
+    this->get_parameter_or("",);
 
     /****************************/
     /* Ros Topic Publish Option */
@@ -32,6 +33,13 @@ LaneDetector::LaneDetector()
     /***********************/
     /* Ros Topic Publisher */
     /***********************/
+
+    /***************/
+    /* View Option */
+    /***************/
+    this->get_parameter_or("image_view/enable_opencv", viewImage_, true);
+    this->get_parameter_or("image_view/wait_key_delay", waitKeyDelay_, 3);
+    this->get_parameter_or("image_view/TEST", TEST, false);
 
 
     /* Image2BEV parameter */
@@ -107,6 +115,7 @@ LaneDetector::LaneDetector()
 
     this->get_parameter_or("threshold/box_size", Threshold_box_size_, 51);
     this->get_parameter_or("threshold/box_offset", Threshold_box_offset_, 50);
+    LoadParams();
 
     distance_ = 0;
 
@@ -231,17 +240,22 @@ LaneDetector::LaneDetector()
     testROIwarpCorners_[1] = Point2f(width_ - wide_extra_upside_[4], 0.0);
     testROIwarpCorners_[2] = Point2f(wide_extra_downside_[4], height_);
     testROIwarpCorners_[3] = Point2f(width_ - wide_extra_downside_[4], height_);
-    /*** front cam ROI 2.5m setting ***/   
+    /*** front cam ROI 2.5m setting ***/
+
+    isNodeRunning_ = true;
+    lanedetect_Thread = std::thread(&LaneDetector::lanedetectInThread, this);
 
 }
 
 LaneDetector::~LaneDetector(void)
 {
+    isNodeRunning_ = false;
 
+    clear_release();
 }
 
 int LaneDetector::arrMaxIdx(int hist[], int start, int end, int Max) {
-    int max_index = -1;
+    int max_idx = -1;
     int max_val = 0;
     int min_pix = 30 * width_ / 1280;
 
@@ -251,14 +265,14 @@ int LaneDetector::arrMaxIdx(int hist[], int start, int end, int Max) {
     for (int i = start; i < end; i++) {
         if (max_val < hist[i]) {
         max_val = hist[i];
-        max_index = i;
+        max_idx = i;
         }
     }
-    if ((max_index == -1) || (hist[max_index] < (size_t)min_pix)) {
+    if ((max_idx == -1) || (hist[max_idx] < (size_t)min_pix)) {
     //    cout << "ERROR : hist range" << endl;
         return -1;
     }
-    return max_index;
+    return max_idx;
 }
 
 

@@ -57,9 +57,6 @@ SensorCam::SensorCam()
   /***************/
   /* View Option */
   /***************/
-  this->get_parameter_or("image_view/enable_opencv", viewImage_, true);
-  this->get_parameter_or("image_view/wait_key_delay", waitKeyDelay_, 3);
-  this->get_parameter_or("image_view/TEST", TEST, false);
 
   /******* recording log *******/    
   gettimeofday(&start_, NULL);
@@ -97,6 +94,7 @@ SensorCam::SensorCam()
   this->get_parameter_or("Calibration/r_dist_coef/c",r_dist_coef[2], 0.);
   this->get_parameter_or("Calibration/r_dist_coef/d",r_dist_coef[3], 0.);
   this->get_parameter_or("Calibration/r_dist_coef/e",r_dist_coef[4], -0.022565312043601477);
+  LoadParmas();
 
   /*** front cam calibration  ***/
   f_camera_matrix = Mat::eye(3, 3, CV_64FC1);
@@ -114,6 +112,10 @@ SensorCam::SensorCam()
 
   map1_ = f_map1_.clone();
   map2_ = f_map2_.clone();
+
+  isNodeRunning_ = true;
+  // lanedetect_Thread = std::thread(&LaneDetector::lanedetectInThread, this);
+  
 }
 
 SensorCam::~SensorCam(void)
@@ -132,7 +134,7 @@ SensorCam::~SensorCam(void)
     RCLCPP_INFO(this->get_logger(), "Stop.");
 }
 
-void SensorCam::camInThread()
+void SensorCam::CamInThread()
 {
     double diff_time = 0.0, CycleTime_ = 0.0;
     int cnt = 0;
