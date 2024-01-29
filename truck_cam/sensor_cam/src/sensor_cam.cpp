@@ -3,11 +3,13 @@
 
 /* Camera Calibration */
 
-namespace SensorCam {
+namespace Sensor {
 
-SensorCam::SensorCam(){
+SensorCam::SensorCam()
+        :Node("SensorCam", rclcpp::NodeOptions()
+                          .allow_undeclared_parameters(true)
+                          .automatically_declare_parameters_from_overrides(true))
 
-}
 {
  /**************/
   /* ROS2 Topic */
@@ -270,4 +272,5 @@ void SensorCam::rearImageSubCallback(const sensor_msgs::msg::Image::SharedPtr ms
     rear_cam_new_frame_arrived = true;
     rear_cam_condition_variable.notify_one();
   }
+}
 }

@@ -2,7 +2,7 @@
 
 int main(int argc, char* argv[]){
     rclcpp::init(argc, argv);
-    std::shared_ptr<rclcpp::Node> node = std::make_shared<LaneDetect::LaneDetector>();
+    std::shared_ptr<rclcpp::Node> node = std::make_shared<Perception::LaneDetector>();
     rclcpp::spin(node);
     rclcpp::shutdown();
     return 0;

@@ -1,8 +1,11 @@
 #include <include/lane_detection.hpp>
 
-namespace LaneDetector {
+namespace Perception {
 
 LaneDetector::LaneDetector()
+        : Node("LaneDetector", rclcpp::NodeOptions()
+                                .allow_undeclared_parameters(true)
+                                .automatically_declare_parameters_from_overrides(true))
 {
     /**************/
     /* ROS2 Topic */
@@ -418,12 +421,6 @@ Mat LaneDetector::detect_lines_sliding_window(Mat _frame, bool _view) {
     int Rlane_current = Rlane_base;
     int Elane_current = Elane_base;
     int E2lane_current = E2lane_base;
-
-
-
-
-
-
 
 }
 

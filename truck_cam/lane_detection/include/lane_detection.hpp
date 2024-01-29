@@ -43,7 +43,7 @@ using namespace cv;
 using namespace std;
 using namespace std::chrono_literals;
 
-namespace LaneDetect {
+namespace Perception {
 
 class LaneDetector : public rclcpp::Node
 {

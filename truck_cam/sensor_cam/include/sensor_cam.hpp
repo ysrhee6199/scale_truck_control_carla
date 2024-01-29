@@ -40,7 +40,7 @@ using namespace std;
 using namespace std::chrono_literals;
 
 
-namespace SensorCam {
+namespace Sensor {
 class SensorCam : public rclcpp::Node // ROS2?
 {
 public:
@@ -54,7 +54,7 @@ public:
 
 // private로 선언해도 되나?
 private:
-
+    void LoadParmas(void);
 
     //Subscriber
     rclcpp::Subscrioption<sensor_msgs::msg::Image>::SharedPtr ImageSubscriber_;
