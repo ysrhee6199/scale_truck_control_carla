@@ -1530,10 +1530,6 @@ Mat LaneDetector::draw_lane(Mat _sliding_frame, Mat trans) {
     return new_frame;
 }
 
-
-
-}
-
 void LaneDetector::clear_release() {
     left_lane_inds_.clear();
     right_lane_inds_.clear();
@@ -1551,7 +1547,4 @@ void LaneDetector::clear_release() {
     center2_y_.clear();
     center3_x_.clear();
     center3_y_.clear();
-}
-
-
 }
