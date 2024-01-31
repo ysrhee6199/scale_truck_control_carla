@@ -159,7 +159,7 @@ void SensorCam::CamInThread()
 }
 }
 
-void SensorCam::LoadParmas(void)
+void SensorCam::LoadParams(void)
 {
 
 }
