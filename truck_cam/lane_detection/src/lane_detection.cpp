@@ -242,6 +242,10 @@ LaneDetector::LaneDetector()
     testROIwarpCorners_[3] = Point2f(width_ - wide_extra_downside_[4], height_);
     /*** front cam ROI 2.5m setting ***/
 
+    /*  Synchronisation         */
+    // cam_new_frame_arrived = false;
+    // rear_cam_new_frame_arrived = false;
+    
     isNodeRunning_ = true;
     lanedetect_Thread = std::thread(&LaneDetector::lanedetectInThread, this);
 
@@ -308,6 +312,65 @@ std::vector<int> LaneDetector::ClusterHistogram(int* hist, int cluster_num) {
         }
         return result;
     }
+
+    // Get the representative index of each cluster
+    std::vector<Cluster> clusters_info(cluster_num);
+    for (int i = 0; i < cluster_num; ++i) {
+        clusters_info[i] = {round(centers.at<float>(i, 0)), 0, -1};
+    }
+
+    // Calculate max value index for each cluster
+    for (int i = 0; i < points.size(); ++i) {
+        int label = labels.at<int>(i);
+        int pixel_count = points[i].y;
+        int index = points[i].x;
+        if (pixel_count > clusters_info[label].maxValue) {
+            clusters_info[label].maxValue = pixel_count;
+            clusters_info[label].maxValueIndex = index;
+            if(pixel_count <= 30) { // min_pixel in cluster
+                clusters_info[label].maxValueIndex = -1;
+            }
+        }
+    }    
+
+    // Sort clusters by center index
+    std::sort(clusters_info.begin(), clusters_info.end(), [](const Cluster& a, const Cluster& b) {
+        return a.centerIndex < b.centerIndex;
+        });
+
+    std::vector<cv::Scalar> colors = { cv::Scalar(255, 0, 0), cv::Scalar(0, 255, 0), cv::Scalar(0, 0, 255), cv::Scalar(255, 255, 0)};  // BGR format
+
+    // Plot cluster_frame and clusters
+    cluster_frame = cv::Mat::zeros(480, 640, CV_8UC3);
+    for (int i = 0; i < 640; ++i) {
+        cv::line(cluster_frame, cv::Point(i, 480), cv::Point(i, 480 - hist[i]), cv::Scalar(255, 255, 255));
+    }
+
+    for (int i = 0; i < points.size(); ++i) {
+        int label = labels.at<int>(i);
+        for (int j = 0; j < cluster_num; ++j) {
+            if (clusters_info[j].centerIndex == round(centers.at<float>(label, 0))) {
+                cv::circle(cluster_frame, cv::Point(points[i].x, 480 - points[i].y), 2, colors[j], -1);
+                break;
+            }
+        }
+    }
+
+    // Prepare result
+    std::vector<int> result;
+    for (const auto& cluster : clusters_info) {
+        result.push_back(cluster.maxValueIndex);
+    }
+
+    //    if(viewImage_){
+    //      namedWindow("Histogram Clusters");
+    //      moveWindow("Histogram Clusters", 710, 700);
+    //      cv::imshow("Histogram Clusters", cluster_frame);
+    //      cv::waitKey(2);
+    //    }
+
+    return result;
+}
 
 }
 
@@ -1016,7 +1079,22 @@ Mat LaneDetector::draw_lane(Mat _sliding_frame, Mat trans) {
 }
 
 void LaneDetector::clear_release() {
-
+    left_lane_inds_.clear();
+    right_lane_inds_.clear();
+    left_x_.clear();
+    left_y_.clear();
+    right_x_.clear();
+    right_y_.clear();
+    extra_x_.clear();
+    extra_y_.clear();
+    extra2_x_.clear();
+    extra2_y_.clear();
+    center_x_.clear();
+    center_y_.clear();
+    center2_x_.clear();
+    center2_y_.clear();
+    center3_x_.clear();
+    center3_y_.clear();
 }
 
 
