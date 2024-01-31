@@ -215,10 +215,6 @@ private:
   float target_x_;
   float target_y_;
 
-  /********** PID control ***********/
-  int prev_lane_, prev_pid_;
-  double Kp_term_, Ki_term_, Kd_term_, err_, prev_err_, I_err_, D_err_, result_;
-
   int width_, height_;
   bool option_; // dynamic ROI
   int threshold_;
