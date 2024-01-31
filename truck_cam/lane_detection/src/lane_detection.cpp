@@ -461,8 +461,6 @@ Mat LaneDetector::polyfit(vector<int> x_val, vector<int> y_val) {
 }
 
 
-// C++ Numpy 있는지 확인 훨씬 빠름
-// 해당 함수도 쪼개기
 Mat LaneDetector::detect_lines_sliding_window(Mat _frame, bool _view) {
     Mat frame, result;
     int width = frame.cols
@@ -484,7 +482,7 @@ Mat LaneDetector::detect_lines_sliding_window(Mat _frame, bool _view) {
     for (int i = 0; i < width; i++) {
         hist[i] += 1;
     }
-    // 0~255 말고 0~1로 변경하면 8bit -> 1bit로 줄일 수 있을듯?
+
     for (int j = height/2; j < height; j++) {
         for (int i = 0; i < width; i++) {
             if (frame.at <uchar>(j,i) == 255) {
@@ -495,7 +493,6 @@ Mat LaneDetector::detect_lines_sliding_window(Mat _frame, bool _view) {
 
     cvtColor(frame, result, COLOR_GRAY2BGR);
 
-    // 곡률이 엄청 큰경우 해당 로직은 고장남, 추후에 고민 할 사람 있으면 고치세요.
     int mid_point = width / 2; // 320
     int n_windows = 9;
     int margin = 120 * width / 1280;
@@ -579,7 +576,466 @@ Mat LaneDetector::detect_lines_sliding_window(Mat _frame, bool _view) {
     int Rlane_current = Rlane_base;
     int Elane_current = Elane_base;
     int E2lane_current = E2lane_base;
+    
+    int L_prev =  Llane_current;
+    int R_prev =  Rlane_current;
+    int E_prev =  Elane_current;
+    int E2_prev =  E2lane_current;
+    int L_gap = 0;
+    int R_gap = 0;
+    int E_gap = 0;
+    int E2_gap = 0;
+    static int prev_L_gap = 0;
+    static int prev_R_gap = 0;
+    static int prev_E_gap = 0;
+    static int prev_E2_gap = 0;
+    static int prev_Llane_current = 0;
+    static int prev_Rlane_current = 0;
+    static int prev_Elane_current = 0;
+    static int prev_E2lane_current = 0;
 
+    unsigned int index;
+
+    if (Llane_base == -1) {
+    //    RCLCPP_ERROR(this->get_logger(), "Not Detection Llane_Base");
+        L_flag = false;
+        prev_Llane_current = 0;
+        prev_L_gap = 0;
+    }
+    if (Rlane_base == -1) {
+    //    RCLCPP_ERROR(this->get_logger(), "Not Detection Rlane_Base");
+        R_flag = false;
+        prev_Rlane_current = 0;
+        prev_R_gap = 0;
+    }
+    if (Elane_base == -1) {
+    //    RCLCPP_INFO(this->get_logger(), "Not Detection Elane_Base");
+        E_flag = false;
+        prev_Elane_current = 0;
+        prev_E_gap = 0;
+    } 
+    if (E2lane_base == -1) {
+    //    RCLCPP_INFO(this->get_logger(), "Not Detection E2lane_Base");
+        E2_flag = false;
+        prev_E2lane_current = 0;
+        prev_E2_gap = 0;
+    } 
+    //  RCLCPP_INFO(this->get_logger(), "E2lane | Llane | Rlane | Elane | E2_flag | E_flag : %d | %d | %d | %d | %d | %d \n", E2lane_base, Llane_base, Rlane_base, Elane_base, E2_flag, E_flag);
+
+    for (int window = 0; window < n_windows; window++) {
+        int  Ly_pos = height - (window + 1) * window_height - 1; // win_y_low , win_y_high = win_y_low - window_height
+        int  Ry_pos = height - (window + 1) * window_height - 1;
+        int  Ey_pos = height - (window + 1) * window_height - 1;
+        int  E2y_pos = height - (window + 1) * window_height - 1;
+        int  Ly_top = height - window * window_height;
+        int  Ry_top = height - window * window_height;
+        int  Ey_top = height - window * window_height;
+        int  E2y_top = height - window * window_height;
+
+        int  Lx_pos = Llane_current - margin; // win_xleft_low, win_xleft_high = win_xleft_low + margin*2
+        int  Rx_pos = Rlane_current - margin; // win_xrignt_low, win_xright_high = win_xright_low + margin*2
+        int  Ex_pos = Elane_current - margin; // win_xrignt_low, win_xright_high = win_xright_low + margin*2
+        int  E2x_pos = E2lane_current - margin; // win_xrignt_low, win_xright_high = win_xright_low + margin*2
+        if (_view) {
+            if(L_flag){
+                rectangle(result, \
+                    Rect(Lx_pos, Ly_pos, window_width, window_height), \
+                    Scalar(255, 50, 100), 1);
+            }
+            if(R_flag){
+                rectangle(result, \
+                    Rect(Rx_pos, Ry_pos, window_width, window_height), \
+                    //Scalar(100, 50, 255), 1);
+                    Scalar(255, 50, 100), 1);
+            }
+            if(E_flag){
+                rectangle(result, \
+                    Rect(Ex_pos, Ey_pos, window_width, window_height), \
+                    //Scalar(50, 255, 255), 1);
+                    Scalar(255, 50, 100), 1);
+            }
+            if(E2_flag){
+                rectangle(result, \
+                    Rect(E2x_pos, E2y_pos, window_width, window_height), \
+                    //Scalar(50, 255, 255), 1);
+                    Scalar(255, 50, 100), 1);
+            }
+        }
+        int nZ_y, nZ_x;
+        good_left_inds.clear();
+        good_right_inds.clear();
+        good_extra_inds.clear();
+        good_extra2_inds.clear();
+
+        for (int index = static_cast<int>(nonZero.total() - 1); index >= 0; index--) {
+            nZ_y = nonZero.at<Point>(index).y;
+            nZ_x = nonZero.at<Point>(index).x;
+            if(L_flag){
+                if ((nZ_y >= Ly_pos) && \
+                    (nZ_y > (distance)) && \
+                    (nZ_y < Ly_top) && \
+                    (nZ_x >= Lx_pos) && \
+                    (nZ_x < (Lx_pos + window_width))) {
+                    if (_view) {
+                        result.at<Vec3b>(nonZero.at<Point>(index))[0] = 255;
+                        result.at<Vec3b>(nonZero.at<Point>(index))[1] = 0;
+                        result.at<Vec3b>(nonZero.at<Point>(index))[2] = 0;
+                    }
+                    good_left_inds.push_back(index);
+                }
+            }
+        
+            if(R_flag){
+                if ((nZ_y >= (Ry_pos)) && \
+                    (nZ_y > (distance)) && \
+                    (nZ_y < Ry_top) && \
+                    (nZ_x >= Rx_pos) && \
+                    (nZ_x < (Rx_pos + window_width))) {
+                    if (_view) {
+                        result.at<Vec3b>(nonZero.at<Point>(index))[0] = 255;
+                        result.at<Vec3b>(nonZero.at<Point>(index))[1] = 0;
+                        result.at<Vec3b>(nonZero.at<Point>(index))[2] = 0;
+            //            result.at<Vec3b>(nonZero.at<Point>(index))[0] = 0;
+            //            result.at<Vec3b>(nonZero.at<Point>(index))[1] = 0;
+            //            result.at<Vec3b>(nonZero.at<Point>(index))[2] = 255;
+                    }
+                    good_right_inds.push_back(index);
+                    }
+            }
+
+            if(E_flag){
+                if ((nZ_y >= (Ey_pos)) && \
+                    (nZ_y > (distance)) && \
+                    (nZ_y < Ey_top) && \
+                    (nZ_x >= Ex_pos) && \
+                    (nZ_x < (Ex_pos + window_width))) {
+                    if (_view) {
+                        result.at<Vec3b>(nonZero.at<Point>(index))[0] = 255;
+                        result.at<Vec3b>(nonZero.at<Point>(index))[1] = 0;
+                        result.at<Vec3b>(nonZero.at<Point>(index))[2] = 0;
+            //            result.at<Vec3b>(nonZero.at<Point>(index))[0] = 0;
+            //            result.at<Vec3b>(nonZero.at<Point>(index))[1] = 255;
+            //            result.at<Vec3b>(nonZero.at<Point>(index))[2] = 255;
+                    }
+                    good_extra_inds.push_back(index);
+                }
+            }
+            if(E2_flag){
+                if ((nZ_y >= (E2y_pos)) && \
+                    (nZ_y > (distance)) && \
+                    (nZ_y < E2y_top) && \
+                    (nZ_x >= E2x_pos) && \
+                    (nZ_x < (E2x_pos + window_width))) {
+                    if (_view) {
+                        result.at<Vec3b>(nonZero.at<Point>(index))[0] = 255;
+                        result.at<Vec3b>(nonZero.at<Point>(index))[1] = 0;
+                        result.at<Vec3b>(nonZero.at<Point>(index))[2] = 0;
+            //            result.at<Vec3b>(nonZero.at<Point>(index))[0] = 0;
+            //            result.at<Vec3b>(nonZero.at<Point>(index))[1] = 255;
+            //            result.at<Vec3b>(nonZero.at<Point>(index))[2] = 255;
+                    }
+                    good_extra2_inds.push_back(index);
+                }
+            }
+        }
+        
+        int Lsum, Rsum, Esum, E2sum;
+        Lsum = Rsum = Esum = E2sum = 0;
+        unsigned int _size;
+        vector<int> Llane_x;
+        vector<int> Llane_y;
+        vector<int> Rlane_x;
+        vector<int> Rlane_y;
+        vector<int> Elane_x;
+        vector<int> Elane_y;
+        vector<int> E2lane_x;
+        vector<int> E2lane_y;
+
+
+        if(L_flag) {
+            if (good_left_inds.size() > (size_t)min_pix) {
+                _size = (unsigned int)(good_left_inds.size());
+                for (int i = Ly_top-1; i >= Ly_pos ; i--) {
+                    int Ly_sum = 0;
+                    int count = 0;
+                    for (index = 0; index < _size; index++) {
+                        int j = nonZero.at<Point>(good_left_inds.at(index)).y;
+                        if(i == j) {
+                            Ly_sum += nonZero.at<Point>(good_left_inds.at(index)).x;
+                            count++;
+                            Lsum += nonZero.at<Point>(good_left_inds.at(index)).x;
+                        }
+                    }
+                    if(count != 0) {
+                        left_x_.insert(left_x_.end(), Ly_sum/count);
+                        left_y_.insert(left_y_.end(), i);
+                        Llane_x.insert(Llane_x.end(), Ly_sum/count);
+                        Llane_y.insert(Llane_y.end(), i);
+                    } else {
+                        Llane_x.insert(Llane_x.end(), -1);
+                        Llane_y.insert(Llane_y.end(), i);
+                    }
+                }
+                Llane_current = Lsum / _size;
+    if(window == 0) {
+        prev_Llane_current = Llane_base;
+    }
+        }
+        else {
+    //        if (window == 0 && prev_Llane_current != 0) {
+    //          Llane_current = prev_Llane_current;
+    //        } else if (window == 1 && prev_L_gap != 0) {
+    //          Llane_current += prev_L_gap;
+    //        } else {
+    //          Llane_current += (L_gap);
+    //  }
+            Llane_current += (L_gap);
+        }
+        }
+
+        if(R_flag) {
+        if (good_right_inds.size() > (size_t)min_pix) {
+            _size = (unsigned int)(good_right_inds.size());
+            for (int i = Ry_top - 1 ; i >= Ry_pos ; i--)
+            {
+            int Ry_sum = 0;
+            int count = 0;
+            for (index = 0; index < _size; index++) {
+                int j = nonZero.at<Point>(good_right_inds.at(index)).y;
+                if(i == j)
+                {
+                Ry_sum += nonZero.at<Point>(good_right_inds.at(index)).x;
+                count++;
+                Rsum += nonZero.at<Point>(good_right_inds.at(index)).x;
+                }
+            }
+            if(count != 0)
+            {
+                right_x_.insert(right_x_.end(), Ry_sum/count);
+                right_y_.insert(right_y_.end(), i);
+                Rlane_x.insert(Rlane_x.end(), Ry_sum/count);
+                Rlane_y.insert(Rlane_y.end(), i);
+            } else {
+                Rlane_x.insert(Rlane_x.end(), -1);
+                Rlane_y.insert(Rlane_y.end(), i);
+            }
+            }
+            Rlane_current = Rsum / _size;
+    if(window == 0) {
+            prev_Rlane_current = Rlane_base;
+    }
+        }
+        else {
+    //        if (window == 0 && prev_Rlane_current != 0) {
+    //          Rlane_current = prev_Rlane_current;
+    //        } else if (window == 1 && prev_R_gap != 0) {
+    //          Rlane_current += prev_R_gap;
+    //        } else {
+    //          Rlane_current += (R_gap);
+    //  }
+            Rlane_current += (R_gap);
+        }
+        }
+
+
+        if(E_flag) {
+        if ((good_extra_inds.size() > (size_t)min_pix)) {
+            _size = (unsigned int)(good_extra_inds.size());
+            for (int i = Ey_top - 1 ; i >= Ey_pos ; i--)
+            {
+            int Ey_sum = 0;
+            int count = 0;
+            for (index = 0; index < _size; index++) {
+                int j = nonZero.at<Point>(good_extra_inds.at(index)).y;
+                if(i == j)
+                {
+                Ey_sum += nonZero.at<Point>(good_extra_inds.at(index)).x;
+                count++;
+                Esum += nonZero.at<Point>(good_extra_inds.at(index)).x;
+                }
+            }
+            if(count != 0)
+            {
+                extra_x_.insert(extra_x_.end(), Ey_sum/count);
+                extra_y_.insert(extra_y_.end(), i);
+                Elane_x.insert(Elane_x.end(), Ey_sum/count);
+                Elane_y.insert(Elane_y.end(), i);
+            } else {
+                Elane_x.insert(Elane_x.end(), -1);
+                Elane_y.insert(Elane_y.end(), i);
+            }
+            }
+            Elane_current = Esum / _size;
+    if(window == 0) {
+            prev_Elane_current = Elane_base;
+    }
+        } 
+        else {
+    //        if (window == 0 && prev_Elane_current != 0) {
+    //          Elane_current = prev_Elane_current;
+    //        } else if (window == 1 && prev_E_gap != 0) {
+    //          Elane_current += prev_E_gap;
+    //        } else {
+    //          Elane_current += (E_gap);
+    //  }
+            Elane_current += (E_gap);
+        }
+        }
+
+        if (E2_flag) {
+        if ((good_extra2_inds.size() > (size_t)min_pix)) {
+            _size = (unsigned int)(good_extra2_inds.size());
+            for (int i = E2y_top - 1 ; i >= E2y_pos ; i--)
+            {
+            int E2y_sum = 0;
+            int count = 0;
+            for (index = 0; index < _size; index++) {
+                int j = nonZero.at<Point>(good_extra2_inds.at(index)).y;
+                if(i == j)
+                {
+                E2y_sum += nonZero.at<Point>(good_extra2_inds.at(index)).x;
+                count++;
+                E2sum += nonZero.at<Point>(good_extra2_inds.at(index)).x;
+                }
+            }
+            if(count != 0)
+            {
+                extra2_x_.insert(extra2_x_.end(), E2y_sum/count);
+                extra2_y_.insert(extra2_y_.end(), i);
+                E2lane_x.insert(E2lane_x.end(), E2y_sum/count);
+                E2lane_y.insert(E2lane_y.end(), i);
+            } else {
+                E2lane_x.insert(E2lane_x.end(), -1);
+                E2lane_y.insert(E2lane_y.end(), i);
+            }
+            }
+            E2lane_current = E2sum / _size;
+    if(window == 0) {
+            prev_E2lane_current = E2lane_base;
+    }
+        } 
+        else {
+    //        if (window == 0 && prev_E2lane_current != 0) {
+    //          E2lane_current = prev_E2lane_current;
+    //        } else if (window == 1 && prev_E2_gap != 0) {
+    //          E2lane_current += prev_E2_gap;
+    //        } else {
+    //          E2lane_current += (E2_gap);
+    //  }
+            E2lane_current += (E2_gap);
+        }
+        }
+
+        if (window != 0) {  
+        if (Rlane_current != R_prev) {
+            R_gap = (Rlane_current - R_prev);
+    if(window == 1) {
+        prev_R_gap = R_gap;
+    }
+        }
+        if (Llane_current != L_prev) {
+            L_gap = (Llane_current - L_prev);
+    if(window == 1) {
+        prev_L_gap = L_gap;
+    }
+        }
+        if((Elane_current != E_prev) && E_flag) {
+            E_gap = (Elane_current - E_prev);
+    if(window == 1) {
+        prev_E_gap = E_gap;
+    }
+        }
+        if ((E2lane_current != E2_prev) && E2_flag) {
+            E2_gap = (E2lane_current - E2_prev);
+    if(window == 1) {
+        prev_E2_gap = E2_gap;
+    }
+        }
+        }
+        /* center1  */
+        if ((Lsum != 0) && (Rsum != 0)) {
+        for (int i = 0; i < Llane_x.size() ; i++)
+        {
+            if((Llane_x.at(i) != -1) && (Rlane_x.at(i) != -1)) {
+            center_x_.insert(center_x_.end(), (Llane_x.at(i)+Rlane_x.at(i)) / 2 );
+            center_y_.insert(center_y_.end(), Llane_y.at(i));
+            }
+        }
+        }
+        /* center2  */
+        if ((Rsum != 0) && (Esum != 0)) {
+        for (int i = 0; i < Rlane_x.size() ; i++)
+        {
+            if((Rlane_x.at(i) != -1) && (Elane_x.at(i) != -1)) {
+            center2_x_.insert(center2_x_.end(), (Rlane_x.at(i)+Elane_x.at(i)) / 2 );
+            center2_y_.insert(center2_y_.end(), Rlane_y.at(i));
+            }
+        }
+        } 
+        /* center3  */
+        if ((E2sum != 0) && (Lsum != 0)) {
+        for (int i = 0; i < E2lane_x.size() ; i++)
+        {
+            if((E2lane_x.at(i) != -1) && (Llane_x.at(i) != -1)) {
+            center3_x_.insert(center3_x_.end(), (E2lane_x.at(i)+Llane_x.at(i)) / 2 );
+            center3_y_.insert(center3_y_.end(), E2lane_y.at(i));
+            }
+        }
+        } 
+
+        L_prev = Llane_current;
+        R_prev = Rlane_current;
+        E_prev = Elane_current;
+        E2_prev = E2lane_current;
+    }
+    
+    if (left_x_.size() != 0) {
+        left_coef_ = polyfit(left_y_, left_x_);
+    }
+    if (right_x_.size() != 0) {
+        right_coef_ = polyfit(right_y_, right_x_);
+    }
+    if (extra_x_.size() != 0) {
+        extra_coef_ = polyfit(extra_y_, extra_x_);
+    }
+    if (extra2_x_.size() != 0) {
+        extra2_coef_ = polyfit(extra2_y_, extra2_x_);
+    }
+    
+    int center_diff_ = 999, center2_diff_ = 999, center3_diff_ = 999;
+    //if (center_x_.size() != 0){
+    if (left_x_.size() != 0 && right_x_.size() != 0 && !center_x_.empty()){
+        //center_coef_ = polyfit(center_y_, center_x_);
+        center_coef_ = (left_coef_ + right_coef_)/2;
+        center_diff_ = abs(mid_point - center_x_.front());
+    }
+    if (extra_x_.size() != 0 && right_x_.size() != 0 && !center2_x_.empty()){
+    //    center2_coef_ = polyfit(center2_y_, center2_x_);
+        center2_coef_ = (right_coef_ + extra_coef_)/2;
+        center2_diff_ = abs(mid_point - center2_x_.front());
+    }
+    if (left_x_.size() != 0 && extra2_x_.size() != 0 && !center3_x_.empty()){
+    //    center3_coef_ = polyfit(center3_y_, center3_x_);
+        center3_coef_ = (extra2_coef_ + left_coef_)/2;
+        center3_diff_ = abs(mid_point - center3_x_.front());
+    }
+
+    //  printf("center | center2 : %d|%d\n", center_x_.front(), center2_x_.front());
+
+    if ((center_diff_!= 999 && center2_diff_!= 999) || (center_diff_!= 999 && center3_diff_!= 999)) {
+        if (center_diff_ < center2_diff_ && center_diff_ < center3_diff_) {
+        center_select_ = 1;
+        } else if (center2_diff_ < center_diff_ && center2_diff_ < center3_diff_) {
+        center_select_ = 2;
+        } else if (center3_diff_ < center_diff_ && center3_diff_ < center2_diff_) {
+        center_select_ = 3;
+        }
+    }
+
+    delete[] hist;
+
+    return result;
+}
 }
 
 Mat LaneDetector::Image2BEV(Mat _frame, int _delay ,bool _view) {
