@@ -59,7 +59,22 @@ LaneKeeping::~LaneKeeping(void)
 
 }
 
-void LaneKeeping::get_steer_coef(float vel){
+void LaneKeeping::get_steer_coef(float vel) {
+    float value;
+    if (vel > 1.2f) {
+        value = 1.2f;
+    }
+    else {
+        value = vel;
+    }
+
+    if (value < 0.65f) {
+        K1_ = K2_ = K_;
+    }
+    else {
+        K1_ = (a_[0] * pow(value, 4)) + (a_[1] * pow(value, 3)) + (a_[2] * pow(value, 2)) + (a_[3] * value) + a_[4]
+        K2_ = (b_[0] * pow(value, 4)) + (b_[1] * pow(value, 3)) + (b_[2] * pow(value, 2)) + (b_[3] * value) + b_[4]
+    }
 
 }
 
@@ -193,6 +208,69 @@ void LaneKeeping::controlSteer() {
 }
 
 tk::spline LaneKeeping::cspline() {
+    float tY1_ = ((float)height_) * 0;
+    float tY2_ = ((float)height_) * 0.1;
+    float tY3_ = ((float)height_) * 0;
+    float tY4_ = ((float)height_) * 0.1;
+    float tY5_ = ((float)height_) * e1_height_;
+
+    std::vector<double> X;
+    std::vector<double> Y;
+    tk::spline cspline_eq;
+    /*****************/
+    /* lc_right_coef */
+    /*****************/
+    if (mark_ == 1 && !right_coef_.empty() && !center2_coef_.empty()) {
+        int tX1_ = (int)((right_coef_.at<float>(2, 0) * pow(tY1_, 2)) + (right_coef_.at<float>(1, 0) * tY1_) + right_coef_.at<float>(0, 0));
+        int tX2_ = (int)((right_coef_.at<float>(2, 0) * pow(tY2_, 2)) + (right_coef_.at<float>(1, 0) * tY2_) + right_coef_.at<float>(0, 0));
+        int tX3_ = (int)((center2_coef_.at<float>(2, 0) * pow(tY3_, 2)) + (center2_coef_.at<float>(1, 0) * tY3_) + center2_coef_.at<float>(0, 0));
+        int tX4_ = (int)((center2_coef_.at<float>(2, 0) * pow(tY4_, 2)) + (center2_coef_.at<float>(1, 0) * tY4_) + center2_coef_.at<float>(0, 0));
+
+        if (center_select_ == 1) {
+            X = {(double)tX1_, (double)tX2_, (double)(width/2)};
+
+            Y = {(double)tY1_, (double)tY2_, (double)height_};
+        }
+        else if (center_select_ == 2) {
+            X = {(double)tX3_, (double)tX4_, (double)(width_/2)};
+
+            Y = {(double)tY3_, (double)tY4_, (double)height_};
+        }
+        else {
+            X = {(double)tX3_, (double)tX4_, (double)(width_/2)};
+
+            Y = {(double)tY3_, (double)tY4_, (double)height_};
+        }
+
+        tk::spline s(Y, X, tk::spline::cspline);
+        cspline_eq = s;
+    }
+    else if (mark_ == 2 && !left_coef_.empty() && !center3_coef_.empty()) {
+        int tX1_ = (int)((left_coef_.at<float>(2, 0) * pow(tY1_, 2)) + (left_coef_.at<float>(1, 0) * tY1_) + left_coef_.at<float>(0, 0));
+        int tX2_ = (int)((left_coef_.at<float>(2, 0) * pow(tY2_, 2)) + (left_coef_.at<flaot>(1, 0) * tY2_) + left_coef_.at<float>(0, 0));
+        int tX3_ = (int)((center3_coef_.at<float>(2, 0) * pow(tY3_, 2)) + (center3_coef_.at<float>(1, 0) * tY3_) + center3_coef_.at<float>(0, 0));
+        int tX4_ = (int)((center3_coef_.at<float>(2, 0) * pow(tY4_, 2)) + (center3_coef_.at<float>(1, 0) * tY4_) + center3_coef_.at<float>(0, 0));
+
+        if (center_select_ == 1) {
+            X = {(double)tX1_, (double)tX2_, (double)(width_/2)};
+
+            Y = {(double)tY1_, (double)tY2_, (double)height_};
+        }
+        else if (center_select_ == 2) {
+            X = {(double)tX3_, (double)tX4_, (double)(width_/2)};
+
+            Y = {(double)tY3_, (double)tY4_, (double)height_};
+        }
+        else {
+            X = {(double)tX3_, (double)tX4_, (double)(width_/2)};
+
+            Y = {(double)tY3_, (double)tY4_, (double)height_};
+        }
+        tk::spline s(Y, X, tk::spline::cspline);
+        cspline_eq = s;
+    }
+
+    return cspline_eq;
 
 }
 

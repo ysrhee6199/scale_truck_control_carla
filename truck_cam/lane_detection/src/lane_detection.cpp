@@ -258,6 +258,10 @@ LaneDetector::~LaneDetector(void)
     clear_release();
 }
 
+void LaneDetector::LoadParams(void) {
+
+}
+
 int LaneDetector::arrMaxIdx(int hist[], int start, int end, int Max) {
     int max_idx = -1;
     int max_val = 0;
@@ -1547,4 +1551,35 @@ void LaneDetector::clear_release() {
     center2_y_.clear();
     center3_x_.clear();
     center3_y_.clear();
+}
+
+Mat LaneDetector::drawBox(Mat frame) {
+    std::string name;
+    Scalar color;
+    int x, y, w, h;
+
+    if (imageStatus_) {
+        name = name_;
+        x = x_;
+        y = y_;
+        w = w_;
+        h = h_;
+    }
+    else if (rearImageStatus_) {
+        name = r_name_
+        x = rx_;
+        y = ry_;
+        w = rw_;
+        h = rh_;
+    }
+    if (name == "SV1") color = cv::Scalar(255, 0, 255);
+    else if (name == "SV2") color = cv::Scalar(55, 200, 55);
+
+    Size text_size = getTextSize(name, FONT_HERSHEY_COMPLEX_SMALL, 1.2, 2, 0);
+    int max_width = (text_size.width > w + 2) ? text_size.width : (w + 2);
+    max_width = max(max_width, (int)w + 2);
+    rectangle(frame, Rect(x, y, w, h), color, 2);
+    rectangle(frame, Point2f(max((int)x - 1, 0), max((int)y - 35, 0)), Point2f(min((int)x + max_width, frame.cols - 1), min((int)y, frame.rows - 1)), color, -1, 8, 0);
+    putText(frame, name, Point2f(x, y - 16), FONT_HERSHEY_COMPLEX_SMALL, 1.2, Scalar(0, 0, 0), 2);
+    return frame;
 }
