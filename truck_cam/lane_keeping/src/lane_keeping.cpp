@@ -38,7 +38,6 @@ LaneKeeping::LaneKeeping()
     this->get_parameter_or("params/a/c", a_[2], 1.2602);
     this->get_parameter_or("params/a/d", a_[3], -1.5161);
     this->get_parameter_or("params/a/e", a_[4], 0.70696);
-
     this->get_parameter_or("params/b/a", b_[0], 0.);
     this->get_parameter_or("params/b/b", b_[1], -1.7536);
     this->get_parameter_or("params/b/c", b_[2], 5.0931);

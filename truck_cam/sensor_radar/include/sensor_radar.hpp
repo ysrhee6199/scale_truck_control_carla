@@ -1,45 +1,51 @@
-#pragma once
-
-// C++
 #include <iostream>
-#include <string>
-#include <cmath>
-#include <fstream>
-#include <time.h>
-#include <boost/thread/thread.hpp>
-#include <pthread.h>
-#include <thread>
-#include <chrono>
-#include <sys/time.h>
-#include <algorithm>
-#include <limits>
 #include <random>
-#include <condition_variable>
-// Eigen
-#include <Eigen/Core>
-#include <sensor_msgs/msgs.pointcloud2.hpp>
-#include <std_msgs/msg/header.hpp>
-//ROS2
-#include "rclcpp/rclcpp.hpp"
-#include "ros2_msg/msg/radar2laned.hpp"
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <thread>
+#include <tuple>
+
+// Carla //
+#include <carla/client/ActorBlueprint.h>
+#include <carla/client/BlueprintLibrary.h>
+#include <carla/client/Client.h>
+#include <carla/client/Map.h>
+#include <carla/client/Sensor.h>
+#include <carla/client/TimeoutException.h>
+#include <carla/client/World.h>
+#include <carla/geom/Transform.h>
+#include <carla/image/ImageIO.h>
+#include <carla/image/ImageView.h>
+#include <carla/sensor/data/Image.h>
+#include <rclcpp/rclcpp.hpp>
+#include <sensor_msgs/msg/image.hpp>
+#include <carla/sensor/data/RadarMeasurement.h>
+#include "sensor_msgs/msg/point_cloud2.hpp"
 
 
-#define _GUN_SOURCE
+namespace cc = carla::client;
+namespace cg = carla::geom;
+namespace csd = carla::sensor::data;
+using namespace std::chrono_literals;
+using namespace std::string_literals;
 
-using namespace std;
-using namespace Eigen;
+
 
 namespace Sensor {
     class SensorRadar : public rclcpp::Node
 {
 public:
     SensorRadar();
-    ~SensorRadar();
+    ~SensorRadar(){
+        radar->Destroy();
+    }
 private:
-    void LoadParams(void);
-
-    //Subscriber
-    rclcpp::Subscrioption<sensor_msgs::msg::RadarPointCloud>::SharedPtr RadarSubscriber_;
+    boost::shared_ptr<carla::client::BlueprintLibrary> blueprint_library = nullptr;
+    boost::shared_ptr<carla::client::Actor> actor = nullptr;
+    carla::client::World& world_;
+    //Publisher
+    rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr RadarPublisher_;
     
     //Callback Func
     void RadarsubCallback(const sensor_msgs::msg::RadarPointCloud::SharedPtr msg);
