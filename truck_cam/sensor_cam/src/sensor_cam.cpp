@@ -24,21 +24,24 @@ SensorCam::SensorCam()
   std::string XavPubTopicName;
   int XavPubQueueSize;
 
+  /// cam ----------------------> lanedetection
+  ///     (front_img, rear_img)
   /******************************/
   /* Ros Topic Subscribe Option */
   /******************************/
   this->get_parameter_or("subscribers/xavier_to_lane/topic", XavSubTopicName, std::string("xav2lane_msg"));
   this->get_parameter_or("subscribers/xavier_to_lane/queue_size", XavSubQueueSize, 1);
-  this->get_parameter_or("subscribers/image_to_lane/topic", ImageSubTopicName, std::string("usb_cam/image_raw"));
-  this->get_parameter_or("subscribers/image_to_lane/queue_size", ImageSubQueueSize, 1);
-  this->get_parameter_or("subscribers/rearImage_to_lane/topic", rearImageSubTopicName, std::string("rear_cam/image_raw"));
-  this->get_parameter_or("subscribers/rearImage_to_lane/queue_size", rearImageSubQueueSize, 1);
+  this->get_parameter_or("subscribers/cam_to_sensorcam/topic", ImageSubTopicName, std::string("usb_cam/image_raw"));
+  this->get_parameter_or("subscribers/cam_to_sensorcam/queue_size", ImageSubQueueSize, 1);
+  this->get_parameter_or("subscribers/rearcam_to_sensorcam/topic", rearImageSubTopicName, std::string("rear_cam/image_raw"));
+  this->get_parameter_or("subscribers/rearcam_to_sensorcam/queue_size", rearImageSubQueueSize, 1);
 
   /****************************/
   /* Ros Topic Publish Option */
   /****************************/
-  this->get_parameter_or("publishers/lane_to_xavier/topic", XavPubTopicName, std::string("lane2xav_msg"));
-  this->get_parameter_or("publishers/lane_to_xavier/queue_size", XavPubQueueSize, 1);
+  this->get_parameter_or("publishers/sensorcam_to_lanedetection/topic", XavPubTopicName, std::string("lane2xav_msg"));
+  this->get_parameter_or("publishers/sensorcam_to_lanedetection/queue_size", XavPubQueueSize, 1);
+  this->get_parameter_or()
   
   /************************/
   /* Ros Topic Subscriber */

@@ -17,14 +17,13 @@ find_package(cv_bridge REQUIRED)
 find_package(ros2_msg REQUIRED)
 
 # Eigen3
-find_package(eigen3_cmake_module REQUIRED)
 find_package(Eigen3 REQUIRED)
 
 set(PROJECT_SOURCES
     src/main.cpp
-    src/sensor_cam.cpp
+    src/sensor_radar.cpp
     
-    include/sensor_cam.hpp
+    include/sensor_radar.hpp
 )
 
 set(PROJECT_SOURCES_DEPENDENCIES
@@ -42,7 +41,7 @@ include_directories(
 )
 
 add_executable()
-ament_target_dependencies()
+ament_target_dependencies(my_target Eigen3)
 
 install(TARGETS
 )

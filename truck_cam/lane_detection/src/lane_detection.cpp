@@ -11,29 +11,38 @@ LaneDetector::LaneDetector()
     /* ROS2 Topic */
     /**************/
     std::string SensorCamTopicName; // front cam
-    int SensorCamQueueSize;
+    int SensorCamSubQueueSize;
     
-    
+    std::string LaneDetectionPubTopicName;
+    int LaneDetectionPubQueueSize;
+
+
+    // laned -> lanek
     
     /******************************/
     /* Ros Topic Subscribe Option */
     /******************************/
-    this->get_parameter_or("",);
+    this->get_parameter_or("subscribers/sensorcam_to_lanedetection/topic", SensorCamTopicName, std::string("cam2laned_msg"));
+    this->get_parameter_or("subscribers/sensorcam_to_lanedetection/queue_size", SensorCamSubQueueSize, 1);
 
     /****************************/
     /* Ros Topic Publish Option */
     /****************************/
-
+    this->get_parameter_or("publishers/lanedetection_to_lanekeeping/topic", LaneDetectionPubTopicName, std::string("laned2lanek_msg"));
+    this->get_parameter_or("publishers/lanedetection_to_lanekeeping/queue_size", LaneDetectionPubQueueSize, 1);
 
     /************************/
     /* Ros Topic Subscriber */
     /************************/
+    SensorCamSubscriber_ = ;
 
+    
 
     /***********************/
     /* Ros Topic Publisher */
     /***********************/
-
+    LaneDetectionPublisher_ = ;
+    
     /***************/
     /* View Option */
     /***************/

@@ -30,8 +30,11 @@ SensorRadar::SensorRadar()
 
     RadarSubscriber_ = this->create_subscription<sensor_msgs::msg::Radar>(RadarSubTopicName, RadarSubQueueSize, std::bind(&SensorRadar::RadarsubCallback, this, std::placeholders::_1));
     
+    /***********************/
+    /* Ros Topic Publisher */
+    /***********************/
 
-
+    RadarPublisher_ = this->create_publisher<sensor_msg>();
     isNodeRunning_ = true;
 }
 
