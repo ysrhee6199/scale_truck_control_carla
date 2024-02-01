@@ -43,11 +43,11 @@ SensorCam::SensorCam()
   /************************/
   /* Ros Topic Subscriber */
   /************************/
-  XavSubscriber_ = this->create_subscription<ros2_msg::msg::Xav2lane>(XavSubTopicName, XavSubQueueSize, std::bind(&LaneDetector::XavSubCallback, this, std::placeholders::_1));
+  XavSubscriber_ = this->create_subscription<ros2_msg::msg::Xav2lane>(XavSubTopicName, XavSubQueueSize, std::bind(&SensorCam::XavSubCallback, this, std::placeholders::_1));
 
-  ImageSubscriber_ = this->create_subscription<sensor_msgs::msg::Image>(ImageSubTopicName, ImageSubQueueSize, std::bind(&LaneDetector::ImageSubCallback, this, std::placeholders::_1));
+  ImageSubscriber_ = this->create_subscription<sensor_msgs::msg::Image>(ImageSubTopicName, ImageSubQueueSize, std::bind(&SensorCam::ImageSubCallback, this, std::placeholders::_1));
 
-  rearImageSubscriber_ = this->create_subscription<sensor_msgs::msg::Image>(rearImageSubTopicName, rearImageSubQueueSize, std::bind(&LaneDetector::rearImageSubCallback, this, std::placeholders::_1));
+  rearImageSubscriber_ = this->create_subscription<sensor_msgs::msg::Image>(rearImageSubTopicName, rearImageSubQueueSize, std::bind(&SensorCam::rearImageSubCallback, this, std::placeholders::_1));
 
   /***********************/
   /* Ros Topic Publisher */
@@ -131,7 +131,7 @@ SensorCam::~SensorCam(void)
 
 
     clear_release();
-    RCLCPP_INFO(this->get_logger(), "Stop.");
+    RCLCPP_INFO(this->get_logger(), "Camera Stop.");
 }
 
 void SensorCam::CamInThread()
