@@ -34,7 +34,7 @@ SensorRadar::SensorRadar()
     /* Ros Topic Publisher */
     /***********************/
 
-    RadarPublisher_ = this->create_publisher<sensor_msg>();
+    RadarPublisher_ = this->create_publisher<sensor_msgs::msg:>();
     isNodeRunning_ = true;
 }
 
