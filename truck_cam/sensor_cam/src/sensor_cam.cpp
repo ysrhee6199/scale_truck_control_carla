@@ -14,48 +14,33 @@ SensorCam::SensorCam()
  /**************/
   /* ROS2 Topic */
   /**************/
-  std::string XavSubTopicName;
-  int XavSubQueueSize;
-  std::string ImageSubTopicName;
-  int ImageSubQueueSize;
-  std::string rearImageSubTopicName;
-  int rearImageSubQueueSize;
+  std::string CarlaCamTopicName;
+  int CarlaCamSubQueueSize;
+  
+  std::string CamPubTopicName;
+  int CamPubQueueSize;
 
-  std::string XavPubTopicName;
-  int XavPubQueueSize;
-
-  /// cam ----------------------> lanedetection
-  ///     (front_img, rear_img)
   /******************************/
   /* Ros Topic Subscribe Option */
   /******************************/
-  this->get_parameter_or("subscribers/xavier_to_lane/topic", XavSubTopicName, std::string("xav2lane_msg"));
-  this->get_parameter_or("subscribers/xavier_to_lane/queue_size", XavSubQueueSize, 1);
-  this->get_parameter_or("subscribers/cam_to_sensorcam/topic", ImageSubTopicName, std::string("usb_cam/image_raw"));
-  this->get_parameter_or("subscribers/cam_to_sensorcam/queue_size", ImageSubQueueSize, 1);
-  this->get_parameter_or("subscribers/rearcam_to_sensorcam/topic", rearImageSubTopicName, std::string("rear_cam/image_raw"));
-  this->get_parameter_or("subscribers/rearcam_to_sensorcam/queue_size", rearImageSubQueueSize, 1);
+  this->get_parameter_or("subscribers/carlacam_to_cam/topic", CarlaCamSubTopicName, std::string("carlacam2cam_msg"));
+  this->get_parameter_or("subscribers/carlacam_to_cam/queue_size", CarlaSubQueueSize, 1);
 
   /****************************/
   /* Ros Topic Publish Option */
   /****************************/
-  this->get_parameter_or("publishers/sensorcam_to_lanedetection/topic", XavPubTopicName, std::string("lane2xav_msg"));
-  this->get_parameter_or("publishers/sensorcam_to_lanedetection/queue_size", XavPubQueueSize, 1);
-  this->get_parameter_or()
+  this->get_parameter_or("publishers/cam_to_lanedetection/topic", CamPubTopicName, std::string("cam2land_msg"));
+  this->get_parameter_or("publishers/cam_to_lanedetection/queue_size", CamPubQueueSize, 1);
   
   /************************/
   /* Ros Topic Subscriber */
   /************************/
-  XavSubscriber_ = this->create_subscription<ros2_msg::msg::Xav2lane>(XavSubTopicName, XavSubQueueSize, std::bind(&SensorCam::XavSubCallback, this, std::placeholders::_1));
-
-  ImageSubscriber_ = this->create_subscription<sensor_msgs::msg::Image>(ImageSubTopicName, ImageSubQueueSize, std::bind(&SensorCam::ImageSubCallback, this, std::placeholders::_1));
-
-  rearImageSubscriber_ = this->create_subscription<sensor_msgs::msg::Image>(rearImageSubTopicName, rearImageSubQueueSize, std::bind(&SensorCam::rearImageSubCallback, this, std::placeholders::_1));
+  CarlaSubscriber_ = this->create_subscription<ros2_msg::msg::CarlaCam2Cam>(CarlaCamSubTopicName, CalraSubQueueSize, std::bind(&SensorCam::CarlaCamSubCallback, this, std::placeholders::_1));
 
   /***********************/
   /* Ros Topic Publisher */
   /***********************/
-  XavPublisher_ = this->create_publisher<ros2_msg::msg::Lane2xav>(XavPubTopicName, XavPubQueueSize);
+  CamPublisher_ = this->create_publisher<ros2_msg::msg::Cam2LaneD>(CamPubTopicName, CamPubQueueSize);
 
   /***************/
   /* View Option */
@@ -107,11 +92,6 @@ SensorCam::SensorCam()
   initUndistortRectifyMap(f_camera_matrix, f_dist_coeffs, Mat(), f_camera_matrix, Size(640, 480), CV_32FC1, f_map1_, f_map2_);
 
   /*** rear cam calibration  ***/
-  r_camera_matrix = Mat::eye(3, 3, CV_64FC1);
-  r_dist_coeffs = Mat::zeros(1, 5, CV_64FC1);
-  r_camera_matrix = (Mat1d(3, 3) << r_matrix[0], r_matrix[1], r_matrix[2], r_matrix[3], r_matrix[4], r_matrix[5], r_matrix[6], r_matrix[7], r_matrix[8]);
-  r_dist_coeffs = (Mat1d(1, 5) << r_dist_coef[0], r_dist_coef[1], r_dist_coef[2], r_dist_coef[3], r_dist_coef[4]);
-  initUndistortRectifyMap(r_camera_matrix, r_dist_coeffs, Mat(), r_camera_matrix, Size(640, 480), CV_32FC1, r_map1_, r_map2_);
 
   map1_ = f_map1_.clone();
   map2_ = f_map2_.clone();
@@ -127,11 +107,7 @@ SensorCam::~SensorCam(void)
 
     /* Unblock the other thread to shutdown the programm smoothly */
     cam_new_frame_arrived = true;
-    rear_cam_new_frame_arrived = true;
     cam_condition_variable.notify_one();
-    rear_cam_condition_variable.notify_one();
-
-
 
     clear_release();
     RCLCPP_INFO(this->get_logger(), "Camera Stop.");
@@ -162,10 +138,6 @@ void SensorCam::CamInThread()
 }
 }
 
-void SensorCam::LoadParams(void)
-{
-
-}
 cv::Point2f SensorCam::transformPoint(const cv::Point& pt, const cv::Mat& camera_matrix, const cv::Mat& dist_coeffs) {
     std::vector<cv::Point2f> srcPoints = { cv::Point2f(pt.x, pt.y) }; // 정수형 좌표를 부동소수점으로 변환
     std::vector<cv::Point2f> dstPoints;
@@ -179,43 +151,7 @@ cv::Point2f SensorCam::transformPoint(const cv::Point& pt, const cv::Mat& camera
     }
 }
 
-void SensorCam::XavSubCallback(const ros2_msg::msg::Xav2lane::SharedPtr msg)
-{
-  if(imageStatus_) {
-    cur_vel_ = msg->cur_vel;
-    distance_ = msg->cur_dist; // for ICRA
-    droi_ready_ = true;
-  
-    get_steer_coef(cur_vel_);
-  
-    lc_right_flag = msg->lc_right_flag;
-    lc_left_flag = msg->lc_left_flag;
-
-    cv::Point2f topLeft = transformPoint(cv::Point(msg->x, msg->y), f_camera_matrix, f_dist_coeffs);
-    cv::Point2f bottomRight = transformPoint(cv::Point(msg->x + msg->w, msg->y + msg->h), f_camera_matrix, f_dist_coeffs);
-
-    name_ = msg->name;
-    x_ = static_cast<int>(topLeft.x);
-    y_ = static_cast<int>(topLeft.y);
-    w_ = static_cast<int>(bottomRight.x - topLeft.x);
-    h_ = static_cast<int>(bottomRight.y - topLeft.y);
-  }
-
-  if(rearImageStatus_) {
-    cur_vel_ = msg->cur_vel;
-
-    cv::Point2f topLeft = transformPoint(cv::Point(msg->rx, msg->ry),r_camera_matrix, r_dist_coeffs);
-    cv::Point2f bottomRight = transformPoint(cv::Point(msg->rx + msg->rw, msg->ry + msg->rh), r_camera_matrix, r_dist_coeffs);
-
-    r_name_ = msg->r_name;
-    rx_ = static_cast<int>(topLeft.x);
-    ry_ = static_cast<int>(topLeft.y);
-    rw_ = static_cast<int>(bottomRight.x - topLeft.x);
-    rh_ = static_cast<int>(bottomRight.y - topLeft.y);
-  }
-}
-
-void SensorCam::ImageSubCallback(const sensor_msgs::msg::Image::SharedPtr msg)
+void SensorCam::CalraCamSubCallback(const sensor_msgs::msg::Image::SharedPtr msg)
 {
   static cv::Mat prev_img;
 //  static double diff_time;
@@ -255,27 +191,6 @@ void SensorCam::ImageSubCallback(const sensor_msgs::msg::Image::SharedPtr msg)
   }
   else if(!prev_img.empty()) {
     camImageCopy_ = prev_img;
-  }
-}
-
-void SensorCam::rearImageSubCallback(const sensor_msgs::msg::Image::SharedPtr msg)
-{
-  Mat frame_;
-  cv_bridge::CvImagePtr rear_cam_image;
-  try{
-    rear_cam_image = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
-  } catch (cv_bridge::Exception& e) {
-    RCLCPP_ERROR(this->get_logger(), "cv_bridge exception : %s", e.what());
-  }
-
-  if(!rear_cam_image->image.empty()) {
-    rearImageHeader_ = msg->header;
-    rearCamImageCopy_ = rear_cam_image->image.clone();
-    frame_ = camImageCopy_;
-    rearImageStatus_ = true;
-
-    rear_cam_new_frame_arrived = true;
-    rear_cam_condition_variable.notify_one();
   }
 }
 }

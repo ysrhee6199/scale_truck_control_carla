@@ -10,8 +10,8 @@ LaneDetector::LaneDetector()
     /**************/
     /* ROS2 Topic */
     /**************/
-    std::string SensorCamTopicName; // front cam
-    int SensorCamSubQueueSize;
+    std::string CamTopicName;
+    int CamSubQueueSize;
     
     std::string LaneDetectionPubTopicName;
     int LaneDetectionPubQueueSize;
@@ -22,8 +22,8 @@ LaneDetector::LaneDetector()
     /******************************/
     /* Ros Topic Subscribe Option */
     /******************************/
-    this->get_parameter_or("subscribers/sensorcam_to_lanedetection/topic", SensorCamTopicName, std::string("cam2laned_msg"));
-    this->get_parameter_or("subscribers/sensorcam_to_lanedetection/queue_size", SensorCamSubQueueSize, 1);
+    this->get_parameter_or("subscribers/cam_to_lanedetection/topic", CamTopicName, std::string("cam2laned_msg"));
+    this->get_parameter_or("subscribers/cam_to_lanedetection/queue_size", CamSubQueueSize, 1);
 
     /****************************/
     /* Ros Topic Publish Option */
@@ -34,14 +34,12 @@ LaneDetector::LaneDetector()
     /************************/
     /* Ros Topic Subscriber */
     /************************/
-    SensorCamSubscriber_ = ;
-
-    
+    CamSubscriber_ = this->create_subscription<ros2_msg::msg::Cam2LaneD>(CamTopicName, CamSubQueueSize, std::bind(&LaneDetector::CamSubCallback, this, std::placeholders::_1));
 
     /***********************/
     /* Ros Topic Publisher */
     /***********************/
-    LaneDetectionPublisher_ = ;
+    LaneDetectionPublisher_ = this->create_publisher<ros2_msg::msg::LaneD2LaneK>(LaneDetectionPubTopicName, LaneDetectionPubQueueSize);
     
     /***************/
     /* View Option */
@@ -266,6 +264,14 @@ LaneDetector::~LaneDetector(void)
 
     clear_release();
 }
+
+
+void LaneDetector::CamSubCallback(const ros2_msg::msg::Cam2LaneD::SharedPtr msg)
+{
+    static cv::Mat prev_img;
+}
+
+
 
 void LaneDetector::LoadParams(void) {
 
