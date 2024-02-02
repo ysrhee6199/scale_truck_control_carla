@@ -32,8 +32,11 @@
 
 //ROS2
 #include "rclcpp/rclcpp.hpp"
-#include "ros2_msg/msg/xav2lane.hpp"
-#include "ros2_msg/msg/lane2xav.hpp"
+
+/* ROS2 msg */
+#include <ros2_msg/msg/Cam2LaneD.msg>
+#include <ros2_msg/msg/LaneD2LaneK.msg>
+
 
 #include "spline.h"
 
