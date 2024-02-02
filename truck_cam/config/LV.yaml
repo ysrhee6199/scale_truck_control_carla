@@ -1,14 +1,10 @@
 /**/LaneDetector:
   ros__parameters:
-    subscribers/image_to_lane/topic: usb_cam/image_raw
-    subscribers/image_to_lane/queue_size: 1
-    subscribers/rearImage_to_lane/topic: null
-    subscribers/rearImage_to_lane/queue_size: 1
-    subscribers/xavier_to_lane/topic: xav2lane_msg
-    subscribers/xavier_to_lane/queue_size: 1
+    subscribers/cam_to_lanedetection/topic: cam2laned_msg
+    subscribers/cam_to_lanedetection/queue_size: 1
 
-    publishers/lane_to_xavier/topic: lane2xav_msg
-    publishers/lane_to_xavier/queue_size: 1
+    publishers/lanedetection_to_lanekeeping/topic: laned2lanek_msg
+    publishers/lanedetection_to_lanekeeping/queue_size: 1
 
     image_view/enable_opencv: false 
     image_view/wait_key_delay: 1

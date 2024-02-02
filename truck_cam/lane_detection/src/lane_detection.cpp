@@ -51,7 +51,6 @@ LaneDetector::LaneDetector()
 
     /* Image2BEV parameter */
     prev_err_ = 0;
-
     last_Llane_base_ = 0;
     last_Rlane_base_ = 0;
     left_coef_ = Mat::zeros(3, 1, CV_32F);
@@ -102,15 +101,6 @@ LaneDetector::LaneDetector()
     this->get_parameter_or("ROI/wide_left/extra_up",extra_up[2], 0);
     this->get_parameter_or("ROI/wide_left/extra_down",extra_down[2], 0);
 
-    this->get_parameter_or("ROI/rear_cam/top_gap",t_gap[3], 0.405f);
-    this->get_parameter_or("ROI/rear_cam/bot_gap",b_gap[3], 0.17f);
-    this->get_parameter_or("ROI/rear_cam/top_height",t_height[3], 0.99f);
-    this->get_parameter_or("ROI/rear_cam/bot_height",b_height[3], 0.47f);
-    this->get_parameter_or("ROI/rear_cam/extra_f",f_extra[3], 1.0f);
-    this->get_parameter_or("ROI/rear_cam/extra_b",b_extra[3], 10.0f);
-    this->get_parameter_or("ROI/rear_cam/extra_up",extra_up[3], 140);
-    this->get_parameter_or("ROI/rear_cam/extra_down",extra_down[3], 180);
-
     this->get_parameter_or("ROI/test/top_gap",t_gap[4], 0.405f);
     this->get_parameter_or("ROI/test/bot_gap",b_gap[4], 0.17f);
     this->get_parameter_or("ROI/test/top_height",t_height[4], 0.99f);
@@ -122,7 +112,6 @@ LaneDetector::LaneDetector()
 
     this->get_parameter_or("threshold/box_size", Threshold_box_size_, 51);
     this->get_parameter_or("threshold/box_offset", Threshold_box_offset_, 50);
-    LoadParams();
 
     distance_ = 0;
 
@@ -204,26 +193,7 @@ LaneDetector::LaneDetector()
     /*** Wide left ROI setting ***/
 
     /*** rear cam ROI setting ***/
-    rearROIcorners_.resize(4);
-    rearROIwarpCorners_.resize(4);
 
-    top_gap[3] = width_ * t_gap[3]; 
-    bot_gap[3] = width_ * b_gap[3];
-    top_height[3] = height_ * t_height[3];
-    bot_height[3] = height_ * b_height[3];
-
-    rearROIcorners_[0] = Point2f(top_gap[3]+f_extra[3], bot_height[3]);
-    rearROIcorners_[1] = Point2f((width_ - top_gap[3])+f_extra[3], bot_height[3]);
-    rearROIcorners_[2] = Point2f(bot_gap[3]+b_extra[3], top_height[3]);
-    rearROIcorners_[3] = Point2f((width_ - bot_gap[3])+b_extra[3], top_height[3]);
-    
-    wide_extra_upside_[3] = extra_up[3];
-    wide_extra_downside_[3] = extra_down[3];
-    
-    rearROIwarpCorners_[0] = Point2f(wide_extra_upside_[3], 0.0);
-    rearROIwarpCorners_[1] = Point2f(width_ - wide_extra_upside_[3], 0.0);
-    rearROIwarpCorners_[2] = Point2f(wide_extra_downside_[3], height_);
-    rearROIwarpCorners_[3] = Point2f(width_ - wide_extra_downside_[3], height_);
     /*** rear cam ROI setting ***/
 
     /*** front cam ROI 2.5m setting ***/
@@ -251,7 +221,6 @@ LaneDetector::LaneDetector()
 
     /*  Synchronisation         */
     // cam_new_frame_arrived = false;
-    // rear_cam_new_frame_arrived = false;
     
     isNodeRunning_ = true;
     lanedetect_Thread = std::thread(&LaneDetector::lanedetectInThread, this);
@@ -262,7 +231,12 @@ LaneDetector::~LaneDetector(void)
 {
     isNodeRunning_ = false;
 
+    ros2_msg::msg::LaneD2LaneK LaneK;
+
+
+
     clear_release();
+    RCLCPP_INFO(this->get_logger(), "Lane Detection Stop.")
 }
 
 
@@ -273,10 +247,14 @@ void LaneDetector::CamSubCallback(const ros2_msg::msg::Cam2LaneD::SharedPtr msg)
 
 
 
-void LaneDetector::LoadParams(void) {
+// void LaneDetector::LoadParams(void) {
+//     /* If you want to change parameter to your parameter, */
+//     /* You write code */
+// }
 
-}
-
+/////////////////////////////////////////////////////////////////////////
+////////////////////* Done, Do not change code. *////////////////////////
+/////////////////////////////////////////////////////////////////////////
 int LaneDetector::arrMaxIdx(int hist[], int start, int end, int Max) {
     int max_idx = -1;
     int max_val = 0;
@@ -299,8 +277,6 @@ int LaneDetector::arrMaxIdx(int hist[], int start, int end, int Max) {
 }
 
 
-
-// 해당 로직이 왜 들어갔지? 일단 여기도 최적화 가능함
 std::vector<int> LaneDetector::ClusterHistogram(int* hist, int cluster_num) {
     struct Cluster {
         int centerIndex;
@@ -496,8 +472,6 @@ Mat LaneDetector::detect_lines_sliding_window(Mat _frame, bool _view) {
 
     int* hist = new int[width];
 
-
-    // initialization hist
     for (int i = 0; i < width; i++) {
         hist[i] += 1;
     }
@@ -681,10 +655,10 @@ Mat LaneDetector::detect_lines_sliding_window(Mat _frame, bool _view) {
             }
         }
         int nZ_y, nZ_x;
-        good_left_inds.clear();
-        good_right_inds.clear();
-        good_extra_inds.clear();
-        good_extra2_inds.clear();
+        good_left_idxs.clear();
+        good_right_idxs.clear();
+        good_extra_idxs.clear();
+        good_extra2_idxs.clear();
 
         for (int index = static_cast<int>(nonZero.total() - 1); index >= 0; index--) {
             nZ_y = nonZero.at<Point>(index).y;
@@ -700,7 +674,7 @@ Mat LaneDetector::detect_lines_sliding_window(Mat _frame, bool _view) {
                         result.at<Vec3b>(nonZero.at<Point>(index))[1] = 0;
                         result.at<Vec3b>(nonZero.at<Point>(index))[2] = 0;
                     }
-                    good_left_inds.push_back(index);
+                    good_left_idxs.push_back(index);
                 }
             }
         
@@ -718,7 +692,7 @@ Mat LaneDetector::detect_lines_sliding_window(Mat _frame, bool _view) {
             //            result.at<Vec3b>(nonZero.at<Point>(index))[1] = 0;
             //            result.at<Vec3b>(nonZero.at<Point>(index))[2] = 255;
                     }
-                    good_right_inds.push_back(index);
+                    good_right_idxs.push_back(index);
                     }
             }
 
@@ -736,7 +710,7 @@ Mat LaneDetector::detect_lines_sliding_window(Mat _frame, bool _view) {
             //            result.at<Vec3b>(nonZero.at<Point>(index))[1] = 255;
             //            result.at<Vec3b>(nonZero.at<Point>(index))[2] = 255;
                     }
-                    good_extra_inds.push_back(index);
+                    good_extra_idxs.push_back(index);
                 }
             }
             if(E2_flag){
@@ -753,7 +727,7 @@ Mat LaneDetector::detect_lines_sliding_window(Mat _frame, bool _view) {
             //            result.at<Vec3b>(nonZero.at<Point>(index))[1] = 255;
             //            result.at<Vec3b>(nonZero.at<Point>(index))[2] = 255;
                     }
-                    good_extra2_inds.push_back(index);
+                    good_extra2_idxs.push_back(index);
                 }
             }
         }
@@ -772,17 +746,17 @@ Mat LaneDetector::detect_lines_sliding_window(Mat _frame, bool _view) {
 
 
         if(L_flag) {
-            if (good_left_inds.size() > (size_t)min_pix) {
-                _size = (unsigned int)(good_left_inds.size());
+            if (good_left_idxs.size() > (size_t)min_pix) {
+                _size = (unsigned int)(good_left_idxs.size());
                 for (int i = Ly_top-1; i >= Ly_pos ; i--) {
                     int Ly_sum = 0;
                     int count = 0;
                     for (index = 0; index < _size; index++) {
-                        int j = nonZero.at<Point>(good_left_inds.at(index)).y;
+                        int j = nonZero.at<Point>(good_left_idxs.at(index)).y;
                         if(i == j) {
-                            Ly_sum += nonZero.at<Point>(good_left_inds.at(index)).x;
+                            Ly_sum += nonZero.at<Point>(good_left_idxs.at(index)).x;
                             count++;
-                            Lsum += nonZero.at<Point>(good_left_inds.at(index)).x;
+                            Lsum += nonZero.at<Point>(good_left_idxs.at(index)).x;
                         }
                     }
                     if(count != 0) {
@@ -813,19 +787,19 @@ Mat LaneDetector::detect_lines_sliding_window(Mat _frame, bool _view) {
         }
 
         if(R_flag) {
-        if (good_right_inds.size() > (size_t)min_pix) {
-            _size = (unsigned int)(good_right_inds.size());
+        if (good_right_idxs.size() > (size_t)min_pix) {
+            _size = (unsigned int)(good_right_idxs.size());
             for (int i = Ry_top - 1 ; i >= Ry_pos ; i--)
             {
             int Ry_sum = 0;
             int count = 0;
             for (index = 0; index < _size; index++) {
-                int j = nonZero.at<Point>(good_right_inds.at(index)).y;
+                int j = nonZero.at<Point>(good_right_idxs.at(index)).y;
                 if(i == j)
                 {
-                Ry_sum += nonZero.at<Point>(good_right_inds.at(index)).x;
+                Ry_sum += nonZero.at<Point>(good_right_idxs.at(index)).x;
                 count++;
-                Rsum += nonZero.at<Point>(good_right_inds.at(index)).x;
+                Rsum += nonZero.at<Point>(good_right_idxs.at(index)).x;
                 }
             }
             if(count != 0)
@@ -858,19 +832,19 @@ Mat LaneDetector::detect_lines_sliding_window(Mat _frame, bool _view) {
 
 
         if(E_flag) {
-        if ((good_extra_inds.size() > (size_t)min_pix)) {
-            _size = (unsigned int)(good_extra_inds.size());
+        if ((good_extra_idxs.size() > (size_t)min_pix)) {
+            _size = (unsigned int)(good_extra_idxs.size());
             for (int i = Ey_top - 1 ; i >= Ey_pos ; i--)
             {
             int Ey_sum = 0;
             int count = 0;
             for (index = 0; index < _size; index++) {
-                int j = nonZero.at<Point>(good_extra_inds.at(index)).y;
+                int j = nonZero.at<Point>(good_extra_idxs.at(index)).y;
                 if(i == j)
                 {
-                Ey_sum += nonZero.at<Point>(good_extra_inds.at(index)).x;
+                Ey_sum += nonZero.at<Point>(good_extra_idxs.at(index)).x;
                 count++;
-                Esum += nonZero.at<Point>(good_extra_inds.at(index)).x;
+                Esum += nonZero.at<Point>(good_extra_idxs.at(index)).x;
                 }
             }
             if(count != 0)
@@ -902,19 +876,19 @@ Mat LaneDetector::detect_lines_sliding_window(Mat _frame, bool _view) {
         }
 
         if (E2_flag) {
-        if ((good_extra2_inds.size() > (size_t)min_pix)) {
-            _size = (unsigned int)(good_extra2_inds.size());
+        if ((good_extra2_idxs.size() > (size_t)min_pix)) {
+            _size = (unsigned int)(good_extra2_idxs.size());
             for (int i = E2y_top - 1 ; i >= E2y_pos ; i--)
             {
             int E2y_sum = 0;
             int count = 0;
             for (index = 0; index < _size; index++) {
-                int j = nonZero.at<Point>(good_extra2_inds.at(index)).y;
+                int j = nonZero.at<Point>(good_extra2_idxs.at(index)).y;
                 if(i == j)
                 {
-                E2y_sum += nonZero.at<Point>(good_extra2_inds.at(index)).x;
+                E2y_sum += nonZero.at<Point>(good_extra2_idxs.at(index)).x;
                 count++;
-                E2sum += nonZero.at<Point>(good_extra2_inds.at(index)).x;
+                E2sum += nonZero.at<Point>(good_extra2_idxs.at(index)).x;
                 }
             }
             if(count != 0)
