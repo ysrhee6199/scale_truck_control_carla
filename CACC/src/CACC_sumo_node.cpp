@@ -10,8 +10,8 @@ CACC_sumo::CACC_sumo()
     qos_profile,
     std::bind(&CACC_sumo::LrcCallback, this, _1)
   );
-  VelocitySubscriber = this->create_subscription<std_msgs::msg::Float32>("velocity_info",1,std::bind(&CACC_sumo::velocity_callback, this, _1));
-  AccelSubscriber = this->create_subscription<std_msgs::msg::Float32>("accel_info",1,std::bind(&CACC_sumo::velocity_callback, this, _1));
+  VelocitySubscriber = this->create_subscription<std_msgs::msg::Float32>("velocity",1,std::bind(&CACC_sumo::velocity_callback, this, _1));
+  AccelSubscriber = this->create_subscription<std_msgs::msg::Float32>("accel",1,std::bind(&CACC_sumo::velocity_callback, this, _1));
   publisher_ = this->create_publisher<ros2_msg::msg::Lrc2ocr>("plan2ctr_msg", qos_profile);
   ShutdownSubscriber = this->create_subscription<std_msgs::msg::String>("/shutdown_topic", 10, std::bind(&CACC_sumo::shutdown_callback, this, std::placeholders::_1));
 }   
