@@ -2351,12 +2351,12 @@ float LaneDetector::display_img(Mat _frame, int _delay, bool _view) {
                         break;
                 }
                 Point temp_point;  
-                if ( ll == 1 && expect[OUTPUT_W * k + i_ind[ll]] != 1) {  // left
+                if ( ll == 0 && expect[OUTPUT_W * k + i_ind[ll]] != 1) {  // left
                     temp_point.x = int(expect[OUTPUT_W * k + i_ind[ll]] * col_sample_w * vis_w / INPUT_W) - 1;
                     temp_point.y = int( vis_h * tusimple_row_anchor[OUTPUT_H - 1 - k] / INPUT_H) - 1;
                     left_point_f.push_back(temp_point);
                 }
-                else if ( ll == 2 && expect[OUTPUT_W * k + i_ind[ll]] != 1) { // right
+                else if ( ll == 1 && expect[OUTPUT_W * k + i_ind[ll]] != 1) { // right
                     temp_point.x = int(expect[OUTPUT_W * k + i_ind[ll]] * col_sample_w * vis_w / INPUT_W) - 1;
                     temp_point.y = int( vis_h * tusimple_row_anchor[OUTPUT_H - 1 - k] / INPUT_H) - 1;
                     right_point_f.push_back(temp_point);   
