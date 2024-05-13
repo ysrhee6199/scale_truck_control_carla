@@ -246,7 +246,7 @@ private:
     float SafetyDist_;
     std_msgs::msg::Float32MultiArray Obstacle_;
     float mindist_ = 0.0f;
-    bool Emergency_ = false;
+    bool Emergency_ = true;
 
     void lanedetectInThread();
     void objectdetectInThread();

@@ -86,7 +86,7 @@ private:
     double time_ = 0;
     double req_time_ = 0;
 
-    bool emergency_flag_ = false;
+    bool emergency_flag_ = true;
 
     std::thread lrcThread_;
     std::thread udpThread_;
