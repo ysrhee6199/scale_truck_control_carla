@@ -12,8 +12,8 @@ Controller::Controller()
     std::bind(&Controller::LrcCallback, this, _1)
   );
   publisher_ = this->create_publisher<ros2_msg::msg::Ocr2lrc>("ocr2lrc_msg", qos_profile);
-  VelocitySubscriber = this->create_subscription<std_msgs::msg::Float32>("velocity_info",1,std::bind(&Controller::velocity_callback, this, _1));
-  ControlPublisher = this->create_publisher<std_msgs::msg::Float32>("velocity",1);
+  VelocitySubscriber = this->create_subscription<std_msgs::msg::Float32>("velocity",1,std::bind(&Controller::velocity_callback, this, _1));
+  ControlPublisher = this->create_publisher<std_msgs::msg::Float32>("velocity_control",1);
   timer_ = this->create_wall_timer(
       10ms, std::bind(&Controller::SetSpeed, this));
 }   

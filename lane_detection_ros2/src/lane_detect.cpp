@@ -67,7 +67,7 @@ LaneDetector::LaneDetector()
   /* Ros Topic Publisher */
   /***********************/
   XavPublisher_ = this->create_publisher<ros2_msg::msg::Lane2xav>(XavPubTopicName, XavPubQueueSize);
-  SteerPublisher_ = this->create_publisher<std_msgs::msg::Float32>("steer",XavPubQueueSize);
+  SteerPublisher_ = this->create_publisher<std_msgs::msg::Float32>("steer_control",XavPubQueueSize);
   /***************/
   /* View Option */
   /***************/
