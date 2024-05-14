@@ -108,6 +108,7 @@ void ScaleTruckController::init()
   this->get_parameter_or("subscribers/cmd_to_xavier/queue_size", CmdSubQueueSize, 10);
   std::string CmdVelSubTopicName = "/cmd2xav_target_vel";
   std::string CmdBrakeSubTopicName = "/cmd2xav_brake";
+  std::string CmdGapSubTopicName = "/cmd2xav_timegap";
   /****************************/
   /* Ros Topic Publish Option */
   /****************************/
@@ -143,6 +144,9 @@ void ScaleTruckController::init()
   CmdVelSubscriber_ = this->create_subscription<std_msgs::msg::Float32>(CmdVelSubTopicName, CmdSubQos, std::bind(&ScaleTruckController::CmdVelCallback, this, std::placeholders::_1));
 
   CmdBrakeSubscriber_ = this->create_subscription<std_msgs::msg::Bool>(CmdBrakeSubTopicName, CmdSubQos, std::bind(&ScaleTruckController::CmdBrakeCallback, this, std::placeholders::_1));
+  
+  CmdGapSubscriber_ = this->create_subscription<std_msgs::msg::Float32>(CmdGapSubTopicName, CmdSubQos, std::bind(&ScaleTruckController::CmdGapCallback, this, std::placeholders::_1));
+
   /***********************/
   /* Ros Topic Publisher */
   /***********************/
@@ -416,6 +420,19 @@ void ScaleTruckController::CmdVelCallback(const std_msgs::msg::Float32::SharedPt
     }
   }
 }
+void ScaleTruckController::CmdGapCallback(const std_msgs::msg::Float32::SharedPtr msg)
+{
+  {
+    std::scoped_lock lock(rep_mutex_);
+    /******/
+    /* LV */
+    /******/
+    if(index_ == 0) {  
+      RCLCPP_INFO(this->get_logger(), "get timegap from scenario : %f", msg->data); 
+      TargetDist_ = msg->data;
+    }
+  }
+}
 void ScaleTruckController::CmdBrakeCallback(const std_msgs::msg::Bool::SharedPtr msg)
 {
   {
@@ -441,7 +458,7 @@ void ScaleTruckController::LrcSubCallback(const ros2_msg::msg::Lrc2xav::SharedPt
     std::scoped_lock lock(vel_mutex_, rep_mutex_);
     CurVel_ = msg->cur_vel;
    // TargetVel_ = msg->tar_vel;
-    TargetDist_ = msg->tar_dist;
+    //TargetDist_ = msg->tar_dist;
   }
 }
 
