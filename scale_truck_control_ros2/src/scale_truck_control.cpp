@@ -424,7 +424,7 @@ void ScaleTruckController::CmdBrakeCallback(const std_msgs::msg::Bool::SharedPtr
     /* LV */
     /******/
     if(index_ == 0) {   
-      RCLCPP_INFO(this->get_logger(), "get data from scenario true", \);
+      RCLCPP_INFO(this->get_logger(), "get data from scenario true");
       Emergency_ = msg->data;
     }
   }
