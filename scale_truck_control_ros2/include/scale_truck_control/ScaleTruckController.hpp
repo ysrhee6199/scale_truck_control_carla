@@ -61,8 +61,8 @@ private:
     rclcpp::Publisher<ros2_msg::msg::Xav2cmd>::SharedPtr CmdPublisher_;
     rclcpp::Publisher<ros2_msg::msg::Xav2lane>::SharedPtr LanePublisher_;
     rclcpp::Publisher<ros2_msg::msg::Yoloflag>::SharedPtr runYoloPublisher_;
-    rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr CmdVelSubcriber_;
-    rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr CmdBrakeSubcriber_;
+    rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr CmdVelSubscriber_;
+    rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr CmdBrakeSubscriber_;
     //Subscriber 
     rclcpp::Subscription<ros2_msg::msg::Lrc2xav>::SharedPtr LrcSubscriber_;
     rclcpp::Subscription<ros2_msg::msg::Cmd2xav>::SharedPtr CmdSubscriber_;
