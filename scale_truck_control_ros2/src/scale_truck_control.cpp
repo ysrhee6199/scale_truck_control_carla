@@ -410,7 +410,8 @@ void ScaleTruckController::CmdVelCallback(const std_msgs::msg::Float32::SharedPt
     /******/
     /* LV */
     /******/
-    if(index_ == 0) {   
+    if(index_ == 0) {  
+      RCLCPP_INFO(this->get_logger(), "get data from scenario : %f", msg->data); 
       TargetVel_ = msg->data;
     }
   }
@@ -423,6 +424,7 @@ void ScaleTruckController::CmdBrakeCallback(const std_msgs::msg::Bool::SharedPtr
     /* LV */
     /******/
     if(index_ == 0) {   
+      RCLCPP_INFO(this->get_logger(), "get data from scenario true", \);
       Emergency_ = msg->data;
     }
   }
