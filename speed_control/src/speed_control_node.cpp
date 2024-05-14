@@ -92,27 +92,6 @@ void Controller::Throttle_PID(double dt_, float tar_vel, float current_vel)
   
   else
   {
-//    err = ref_vel - current_vel;
-//    P_err = Kp_brake_ * err;
-//    I_err += Ki_brake_ * err * dt_;
-//    A_err += Ka_brake_ * ((prev_u_b - prev_u) / dt_);
-//
-//    if(tar_vel <= 0){
-//      P_err = 0;
-//      I_err = 0;
-//      A_err = 0;
-//    }
-//  
-//    u = P_err + I_err + A_err + ref_vel * Kf_brake_;
-//
-//    if(u > -2.0) u_b = -2.0;
-//    else if(u <= 0) u_b = -1.0;
-//    else u_b = u;
-//  
-//    pub_msg_.u_k = u_b;
-//    prev_u_b = u_b;
-//    prev_u = u;
-//    prev_dist_err = dist_err;
     u_k = -1.0f;
     pub_msg_.u_k = u_k;
     control_msg_.data = u_k;
