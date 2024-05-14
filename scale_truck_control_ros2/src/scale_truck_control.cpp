@@ -140,9 +140,9 @@ void ScaleTruckController::init()
 
   DistSubscriber_ = this->create_subscription<ros2_msg::msg::Obj2xav>(objectTopicName, objectQueueSize, std::bind(&ScaleTruckController::DistCallback, this, std::placeholders::_1));
 
-  CmdVelSubcriber = this->create_subscription<std_msg::msg::Float32>(CmdVelSubTopicName, CmdSubQos, std::bind(&ScaleTruckController::CmdVelCallback, this, std::placeholders::_1));
+  CmdVelSubcriber_ = this->create_subscription<std_msgs::msg::Float32>(CmdVelSubTopicName, CmdSubQos, std::bind(&ScaleTruckController::CmdVelCallback, this, std::placeholders::_1));
 
-  CmdbrakeSubcriber = this->create_subscription<std_msg::msg::Bool>(CmdBrakeSubTopicName, CmdSubQos, std::bind(&ScaleTruckController::CmdBrakeCallback, this, std::placeholders::_1));
+  CmdbrakeSubcriber_ = this->create_subscription<std_msgs::msg::Bool>(CmdBrakeSubTopicName, CmdSubQos, std::bind(&ScaleTruckController::CmdBrakeCallback, this, std::placeholders::_1));
   /***********************/
   /* Ros Topic Publisher */
   /***********************/
@@ -403,7 +403,7 @@ void ScaleTruckController::LaneSubCallback(const ros2_msg::msg::Lane2xav::Shared
 
   }
 }
-void ScaleTruckController::CmdVelCallback(const std_msg::msg::Float32::SharedPtr msg)
+void ScaleTruckController::CmdVelCallback(const std_msgs::msg::Float32::SharedPtr msg)
 {
   {
     std::scoped_lock lock(rep_mutex_);
@@ -415,7 +415,7 @@ void ScaleTruckController::CmdVelCallback(const std_msg::msg::Float32::SharedPtr
     }
   }
 }
-void ScaleTruckController::CmdBrakeCallback(const std_msg::msg::Bool::SharedPtr msg)
+void ScaleTruckController::CmdBrakeCallback(const std_msgs::msg::Bool::SharedPtr msg)
 {
   {
     std::scoped_lock lock(rep_mutex_);

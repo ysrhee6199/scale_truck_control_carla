@@ -61,7 +61,8 @@ private:
     rclcpp::Publisher<ros2_msg::msg::Xav2cmd>::SharedPtr CmdPublisher_;
     rclcpp::Publisher<ros2_msg::msg::Xav2lane>::SharedPtr LanePublisher_;
     rclcpp::Publisher<ros2_msg::msg::Yoloflag>::SharedPtr runYoloPublisher_;
-
+    rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr CmdVelSubcriber_;
+    rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr CmdBrakeSubcriber_;
     //Subscriber 
     rclcpp::Subscription<ros2_msg::msg::Lrc2xav>::SharedPtr LrcSubscriber_;
     rclcpp::Subscription<ros2_msg::msg::Cmd2xav>::SharedPtr CmdSubscriber_;
@@ -76,8 +77,8 @@ private:
     void Lrc2ocrCallback(void);
     void LrcSubCallback(const ros2_msg::msg::Lrc2xav::SharedPtr msg);  
     void CmdSubCallback(const ros2_msg::msg::Cmd2xav::SharedPtr msg);  
-    void CmdVelCallback(const std_msg::msg::Float32::SharedPtr msg);  
-    void CmdBrakeCallback(const std_msg::msg::Bool::SharedPtr msg);  
+    void CmdVelCallback(const std_msgs::msg::Float32::SharedPtr msg);  
+    void CmdBrakeCallback(const std_msgs::msg::Bool::SharedPtr msg);  
     void objectCallback(const std_msgs::msg::Float32MultiArray &msg);
     void LaneSubCallback(const ros2_msg::msg::Lane2xav::SharedPtr msg);
     void RearSubCallback(const ros2_msg::msg::Lane2xav::SharedPtr msg);
