@@ -57,7 +57,7 @@ bool ScaleTruckController::readParameters() {
   /*******************/
   /* Distance Option */
   /*******************/
-  this->get_parameter_or("params/target_dist", TargetDist_, 14.0f); // m
+  this->get_parameter_or("params/target_dist", TargetDist_, 0.5f); // m
   this->get_parameter_or("params/lv_stop_dist", LVstopDist_, 3.0f); // m
   this->get_parameter_or("params/fv_stop_dist", FVstopDist_, 3.0f); // m
 
@@ -106,7 +106,8 @@ void ScaleTruckController::init()
   this->get_parameter_or("subscribers/lrc_to_xavier/queue_size", LrcSubQueueSize, 1);
   this->get_parameter_or("subscribers/cmd_to_xavier/topic", CmdSubTopicName, std::string("/cmd2xav_msg"));
   this->get_parameter_or("subscribers/cmd_to_xavier/queue_size", CmdSubQueueSize, 10);
-
+  std::string CmdVelSubTopicName = "/cmd2xav_target_vel";
+  std::string CmdBrakeSubTopicName = "/cmd2xav_brake";
   /****************************/
   /* Ros Topic Publish Option */
   /****************************/
@@ -139,13 +140,16 @@ void ScaleTruckController::init()
 
   DistSubscriber_ = this->create_subscription<ros2_msg::msg::Obj2xav>(objectTopicName, objectQueueSize, std::bind(&ScaleTruckController::DistCallback, this, std::placeholders::_1));
 
+  CmdVelSubcriber = this->create_subscription<std_msg::msg::Float32>(CmdVelSubTopicName, CmdSubQos, std::bind(&ScaleTruckController::CmdVelCallback, this, std::placeholders::_1));
+
+  CmdbrakeSubcriber = this->create_subscription<std_msg::msg::Bool>(CmdBrakeSubTopicName, CmdSubQos, std::bind(&ScaleTruckController::CmdBrakeCallback, this, std::placeholders::_1));
   /***********************/
   /* Ros Topic Publisher */
   /***********************/
   LrcPublisher_ = this->create_publisher<ros2_msg::msg::Xav2lrc>(LrcPubTopicName, LrcPubQueueSize);  
   CmdPublisher_ = this->create_publisher<ros2_msg::msg::Xav2cmd>(CmdPubTopicName, CmdPubQos);  
   LanePublisher_=this->create_publisher<ros2_msg::msg::Xav2lane>(LanePubTopicName,LanePubQueueSize); 
-
+  
   /**********************/
   /* Safety Start Setup */
   /**********************/
@@ -399,7 +403,30 @@ void ScaleTruckController::LaneSubCallback(const ros2_msg::msg::Lane2xav::Shared
 
   }
 }
-
+void ScaleTruckController::CmdVelCallback(const std_msg::msg::Float32::SharedPtr msg)
+{
+  {
+    std::scoped_lock lock(rep_mutex_);
+    /******/
+    /* LV */
+    /******/
+    if(index_ == 0) {   
+      TargetVel_ = msg->data;
+    }
+  }
+}
+void ScaleTruckController::CmdBrakeCallback(const std_msg::msg::Bool::SharedPtr msg)
+{
+  {
+    std::scoped_lock lock(rep_mutex_);
+    /******/
+    /* LV */
+    /******/
+    if(index_ == 0) {   
+      Emergency_ = msg->data;
+    }
+  }
+}
 void ScaleTruckController::DistCallback(const ros2_msg::msg::Obj2xav::SharedPtr msg)
 {
     std::scoped_lock lock(object_mutex_);

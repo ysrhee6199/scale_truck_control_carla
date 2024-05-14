@@ -76,7 +76,7 @@ private:
 
     float angle_degree_ = 0;
     float cur_dist_ = 0.8f;
-    float tar_dist_ = 0.8f;
+    float tar_dist_ = 0.5f;
     float ref_vel_ = 0;
     float cur_vel_ = 0;
     float tar_vel_ = 0;

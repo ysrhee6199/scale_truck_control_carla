@@ -26,7 +26,7 @@ public:
     float preceding_truck_vel_;
     float output_;
 
-    bool emergency_stop_ = false;
+    bool emergency_stop_ = true;
     
     float des_spacing = 0.0f;
     float spacing_err = 0.0f;

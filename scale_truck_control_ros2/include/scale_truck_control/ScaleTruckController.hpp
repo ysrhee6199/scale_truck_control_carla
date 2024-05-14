@@ -22,6 +22,7 @@
 #include "sensor_msgs/msg/image.hpp"
 #include "std_msgs/msg/float32_multi_array.hpp"
 #include "std_msgs/msg/float32.hpp"
+#include "std_msgs/msg/bool.hpp"
 
 //custom msgs
 #include "ros2_msg/msg/xav2lrc.hpp"
@@ -75,6 +76,8 @@ private:
     void Lrc2ocrCallback(void);
     void LrcSubCallback(const ros2_msg::msg::Lrc2xav::SharedPtr msg);  
     void CmdSubCallback(const ros2_msg::msg::Cmd2xav::SharedPtr msg);  
+    void CmdVelCallback(const std_msg::msg::Float32::SharedPtr msg);  
+    void CmdBrakeCallback(const std_msg::msg::Bool::SharedPtr msg);  
     void objectCallback(const std_msgs::msg::Float32MultiArray &msg);
     void LaneSubCallback(const ros2_msg::msg::Lane2xav::SharedPtr msg);
     void RearSubCallback(const ros2_msg::msg::Lane2xav::SharedPtr msg);
