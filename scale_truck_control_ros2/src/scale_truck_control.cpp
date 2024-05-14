@@ -440,7 +440,7 @@ void ScaleTruckController::LrcSubCallback(const ros2_msg::msg::Lrc2xav::SharedPt
   {
     std::scoped_lock lock(vel_mutex_, rep_mutex_);
     CurVel_ = msg->cur_vel;
-    TargetVel_ = msg->tar_vel;
+   // TargetVel_ = msg->tar_vel;
     TargetDist_ = msg->tar_dist;
   }
 }
