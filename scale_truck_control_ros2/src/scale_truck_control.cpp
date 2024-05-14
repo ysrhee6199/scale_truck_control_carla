@@ -123,7 +123,7 @@ void ScaleTruckController::init()
   /******************/
   rclcpp::QoS CmdSubQos(CmdSubQueueSize);
   CmdSubQos.reliability(rclcpp::ReliabilityPolicy::Reliable);
-  CmdSubQos.durability(rclcpp::DurabilityPolicy::Volatile);
+  CmdSubQos.durability(rclcpp::DurabilityPolicy::TransientLocal);
 
   rclcpp::QoS CmdPubQos(CmdPubQueueSize);
   CmdPubQos.reliability(rclcpp::ReliabilityPolicy::Reliable);
