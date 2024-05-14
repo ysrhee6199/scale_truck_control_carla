@@ -36,12 +36,8 @@ public:
     float front_v = 0.0f;
     float accel = 0.0f;
     float target_speed = 0.0f;
-    float myGapClosingControlGainGap = 0.45f;
-    float myGapClosingControlGainGapDot = 0.25f;
-    float myCollisionAvoidanceGainGap = 0.45f;
-    float myCollisionAvoidanceGainGapDot = 0.25f;
     float myGapControlGainGap = 0.45f;
-    float myGapControlGainGapDot = 0.25f;
+    float myGapControlGainGapDot = 0.35f;
 
 private:
     void LrcCallback(const ros2_msg::msg::Lrc2ocr::SharedPtr msg);

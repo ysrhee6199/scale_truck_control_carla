@@ -31,22 +31,10 @@ void CACC_sumo::calc_param()
 float CACC_sumo::calc_speed() 
 {
     float t_speed = 0.0f;
-    
-    if(abs(spacing_err) <= 1.0) { // speed mode
-        t_speed = cur_vel_ + myGapControlGainGap * spacing_err + myGapControlGainGapDot * speed_err;
-        //RCLCPP_INFO(this->get_logger(), "Speed Mode, spaing_err : %f, speed_err : %f",spacing_err,speed_err);
-        return t_speed;
-    }
-    else if(spacing_err < -3.0) { //collision avoidance mode
-        t_speed = cur_vel_ + myCollisionAvoidanceGainGap * spacing_err + myCollisionAvoidanceGainGapDot * speed_err;
-        //RCLCPP_INFO(this->get_logger(), "collision avoidance mode, spaing_err : %f, speed_err : %f",spacing_err,speed_err);
-        return t_speed;
-    }
-    else { // Gap closing mode
-        t_speed = cur_vel_ + myGapClosingControlGainGap * spacing_err + myGapClosingControlGainGapDot*speed_err;
-        //RCLCPP_INFO(this->get_logger(), " Gap closing mode, spaing_err : %f, speed_err : %f",spacing_err,speed_err);
-        return t_speed;
-    }
+    t_speed = cur_vel_ + myGapControlGainGap * spacing_err + myGapControlGainGapDot * speed_err;
+    //RCLCPP_INFO(this->get_logger(), "Speed Mode, spaing_err : %f, speed_err : %f",spacing_err,speed_err);
+    return t_speed;
+
 
 }
 //export LD_LIBRARY_PATH=/home/nvidia/ros2_ws/install/lane_detection_ros2/lib/lane_detection_ros2:$LD_LIBRARY_PATH
